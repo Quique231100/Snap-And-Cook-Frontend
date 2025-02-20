@@ -1,21 +1,21 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import Colors from "../assets/colors/Colors";
+import Colors from "../../assets/colors/Colors";
 
-const Home = () => {
+const Search = () => {
   return (
     <View style={styles.container}>
-      <Text>Home</Text>
+      <Text>Search</Text>
     </View>
   );
 };
 
-export default Home;
+export default Search;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.verdeGasolina,
+    backgroundColor: Colors.beige,
     justifyContent: "center",
     alignItems: "center",
   },

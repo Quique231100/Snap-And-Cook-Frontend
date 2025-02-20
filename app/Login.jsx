@@ -1,11 +1,4 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
@@ -45,7 +38,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Link href="/Home" asChild>
+      <Link href="/home/Home" asChild>
         <Pressable>
           <View style={styles.loginButton}>
             <Text style={styles.subtitle}>Entrar</Text>

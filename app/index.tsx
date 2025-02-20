@@ -1,21 +1,20 @@
-// //Este es el archivo principal donde la app funciona correctamente
+//Este es el archivo principal donde la app funciona correctamente
 
-// //Importación de las ventanas de la aplicación
-// import Login from "./Login.jsx";
-
-// //Función principal de la aplicación
-// export default function Index() {
-//   return <Login />;
-// }
-
+//Importación de las ventanas de la aplicación
 import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
 
+//Función principal de la aplicación
 export default function Index() {
   return (
     <View style={styles.container}>
-      <Text style={styles.txtTitle}>Bienvenido</Text>
+      <View style={styles.saluteContainer}>
+        <Text style={styles.txtTitle}>Bienvenido</Text>
+        <Text style={styles.txtSubtitle}>
+          Cualquier receta en tan solo un "shoot"
+        </Text>
+      </View>
 
       <View style={styles.btnContainer}>
         <Link href="/Login" asChild>
@@ -27,7 +26,7 @@ export default function Index() {
         </Link>
 
         <Link href="/Register" asChild>
-          <Pressable onPress={() => console.log("Login")}>
+          <Pressable>
             <View style={styles.registerBtn}>
               <Text style={styles.txtRegisterBtn}>Crear una cuenta</Text>
             </View>
@@ -45,8 +44,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  saluteContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 20,
+  },
   txtTitle: {
     color: Colors.beige,
+    fontSize: 36,
+    fontWeight: "bold",
+  },
+  txtSubtitle: {
+    color: Colors.beige,
+    fontSize: 16,
   },
   btnContainer: {
     gap: 24,
