@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
+import Colors from "../assets/colors/Colors";
 
 const Login = () => {
   return (
@@ -17,7 +18,11 @@ const Login = () => {
           <View style={styles.iconCont}>
             <Ionicons name="person" size={32} color="#F4E7D4" />
           </View>
-          <TextInput placeholder="Correo" placeholderTextColor={"#F4E7D4"} />
+          <TextInput
+            placeholder="Correo"
+            placeholderTextColor={"#F4E7D4"}
+            style={styles.txtInput}
+          />
         </View>
         <View style={styles.inputCont}>
           <View style={styles.iconCont}>
@@ -26,6 +31,8 @@ const Login = () => {
           <TextInput
             placeholder="Contraseña"
             placeholderTextColor={"#F4E7D4"}
+            style={styles.txtInput}
+            secureTextEntry={true}
           />
         </View>
       </View>
@@ -99,6 +106,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  txtInput: { width: "100%", color: Colors.beige },
   loginButton: {
     width: 322,
     height: 48,

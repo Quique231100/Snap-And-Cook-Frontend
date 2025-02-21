@@ -1,7 +1,7 @@
 //Este es el archivo principal donde la app funciona correctamente
 
 //Importación de las ventanas de la aplicación
-import { Text, View, StyleSheet, Pressable } from "react-native";
+import { Text, View, StyleSheet, Pressable, Image } from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
 
@@ -14,6 +14,13 @@ export default function Index() {
         <Text style={styles.txtSubtitle}>
           Cualquier receta en tan solo un "shoot"
         </Text>
+      </View>
+
+      <View style={styles.imgCont}>
+        <Image
+          style={styles.imgM}
+          source={require("@/assets/images/imgWelcome.png")}
+        />
       </View>
 
       <View style={styles.btnContainer}>
@@ -47,7 +54,7 @@ const styles = StyleSheet.create({
   saluteContainer: {
     justifyContent: "center",
     alignItems: "center",
-    gap: 20,
+    gap: "10%",
   },
   txtTitle: {
     color: Colors.beige,
@@ -58,12 +65,25 @@ const styles = StyleSheet.create({
     color: Colors.beige,
     fontSize: 16,
   },
+  imgCont: {
+    width: "80%",
+    height: "30%",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: "4%",
+  },
+  imgM: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+  },
   btnContainer: {
-    gap: 24,
+    width: "80%",
+    height: "20%",
   },
   loginBtn: {
-    width: 322,
-    height: 48,
+    width: "100%",
+    height: "50%",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.grisOscuro,
@@ -74,8 +94,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   registerBtn: {
-    width: 322,
-    height: 48,
+    width: "100%",
+    height: "50%",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.beige,
