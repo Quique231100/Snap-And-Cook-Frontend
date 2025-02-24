@@ -1,20 +1,67 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import React from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  Alert,
+} from "react-native";
+import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors";
 import { baseUrl } from "../config";
 import axios from "axios";
 
 const Login = () => {
-  //Es
-  const handleLogin = () => {
+  //Este es un ejemplo
+  const getUsersExample = () => {
     axios({
       method: "get",
       url: `${baseUrl}/users`,
     }).then((response) => {
       console.log(response.data);
     });
+  };
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+
+  //Funcion para inicio de sesion
+  const handleLogin = () => {
+    try {
+      //Validación campos vacíos
+      if (!email.trim() || !password.trim()) {
+        Alert.alert("Error", "Debe llenar los campos para continuar");
+        return;
+      }
+      axios({
+        method: "post",
+        url: `${baseUrl}/users/sign-in`,
+        data: {
+          correo: email,
+          contrasena: password,
+        },
+      })
+        .then((response) => {
+          if (!response.data) {
+            Alert.alert("Error", "Correo o contraseña incorrectos");
+            return;
+          }
+          // Si el inicio de sesión es exitoso, redirigir a Home
+          router.push("/home");
+        })
+        .catch((error) => {
+          if (error.response && error.response.status === 401) {
+            Alert.alert("Error", "Correo o contraseña incorrectos");
+          } else {
+            console.error("Error en la petición:", error);
+          }
+        });
+    } catch (error) {
+      console.error("Error en la ejecución:", error);
+    }
   };
 
   return (
@@ -34,6 +81,9 @@ const Login = () => {
             placeholder="Correo"
             placeholderTextColor={"#F4E7D4"}
             style={styles.txtInput}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
           />
         </View>
         <View style={styles.inputCont}>
@@ -45,6 +95,9 @@ const Login = () => {
             placeholderTextColor={"#F4E7D4"}
             style={styles.txtInput}
             secureTextEntry={true}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
           />
         </View>
       </View>
@@ -58,7 +111,7 @@ const Login = () => {
       </Link>
 
       {/* <Link href="/home/Home" asChild> */}
-      <Pressable onPress={handleLogin()}>
+      <Pressable onPress={handleLogin}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
