@@ -3,8 +3,20 @@ import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors";
+import { baseUrl } from "../config";
+import axios from "axios";
 
 const Login = () => {
+  //Es
+  const handleLogin = () => {
+    axios({
+      method: "get",
+      url: `${baseUrl}/users`,
+    }).then((response) => {
+      console.log(response.data);
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.saluteCont}>
@@ -45,13 +57,13 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Link href="/home/Home" asChild>
-        <Pressable>
-          <View style={styles.loginButton}>
-            <Text style={styles.subtitle}>Entrar</Text>
-          </View>
-        </Pressable>
-      </Link>
+      {/* <Link href="/home/Home" asChild> */}
+      <Pressable onPress={handleLogin()}>
+        <View style={styles.loginButton}>
+          <Text style={styles.subtitle}>Entrar</Text>
+        </View>
+      </Pressable>
+      {/* </Link> */}
 
       <Link href="/Register" asChild>
         <Pressable>
