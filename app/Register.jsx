@@ -284,6 +284,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.grisOscuro,
     borderRadius: 8,
+    marginBottom: "20%",
   },
   txtRegisterBtn: {
     fontSize: 16,
