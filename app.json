@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Snap-And-Cook-Frontend",
-    "slug": "Snap-And-Cook-Frontend",
+    "name": "SnapAndCookExample",
+    "slug": "SnapAndCookExample",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

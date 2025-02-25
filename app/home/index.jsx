@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import Colors from "../../assets/colors/Colors";
 
-const Home = () => {
+const Index = () => {
   return (
     <View style={styles.container}>
       <Text>Home</Text>
@@ -10,7 +10,7 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Index;
 
 const styles = StyleSheet.create({
   container: {

@@ -20,7 +20,7 @@ const Register = () => {
           Regístrate para comenzar la aventura
         </Text>
 
-        <Link href="/Login" asChild>
+        <Link href="/login" asChild>
           <Pressable>
             <View style={styles.loginBtn}>
               <Text style={styles.txtLoginBtn}>

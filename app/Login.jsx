@@ -110,7 +110,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Link href="/home/Home" asChild>
+      <Link href="/home" asChild>
         {/* <Pressable onPress={handleLogin}> */}
         <Pressable>
           <View style={styles.loginButton}>
@@ -119,7 +119,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Link href="/Register" asChild>
+      <Link href="/register" asChild>
         <Pressable>
           <View style={styles.registerButton}>
             <Text style={{ fontSize: 16, color: "#4C5454" }}>
