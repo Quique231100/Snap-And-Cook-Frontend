@@ -110,13 +110,14 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      {/* <Link href="/home/Home" asChild> */}
-      <Pressable onPress={handleLogin}>
-        <View style={styles.loginButton}>
-          <Text style={styles.subtitle}>Entrar</Text>
-        </View>
-      </Pressable>
-      {/* </Link> */}
+      <Link href="/home/Home" asChild>
+        {/* <Pressable onPress={handleLogin}> */}
+        <Pressable>
+          <View style={styles.loginButton}>
+            <Text style={styles.subtitle}>Entrar</Text>
+          </View>
+        </Pressable>
+      </Link>
 
       <Link href="/Register" asChild>
         <Pressable>
