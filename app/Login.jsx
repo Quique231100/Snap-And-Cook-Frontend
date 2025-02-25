@@ -10,8 +10,10 @@ import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors";
-import { baseUrl } from "../config";
+//import { baseUrl } from "../config";
 import axios from "axios";
+
+const baseUrl = process.env.DB_HOST;
 
 const Login = () => {
   //Este es un ejemplo
