@@ -17,15 +17,6 @@ const baseUrl = process.env.DB_HOST;
 
 const Login = () => {
   //Este es un ejemplo
-  const getUsersExample = () => {
-    axios({
-      method: "get",
-      url: `${baseUrl}/users`,
-    }).then((response) => {
-      console.log(response.data);
-    });
-  };
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
