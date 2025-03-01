@@ -5,24 +5,29 @@ import {
   TextInput,
   View,
   Alert,
+  Button,
 } from "react-native";
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors";
-//import { baseUrl } from "../config";
 import axios from "axios";
+import { useUser } from "../context/UserContext";
 
-const baseUrl = process.env.DB_HOST;
+//const baseUrl = process.env.DB_HOST; //ESTO DEJO DE FUNCIONAR, SE NECESITA ANALIZAR COMO OBTENER EL VALOR DE LA VARIABLE DE ENTORNO
+const baseUrl = "http://localhost:4000"; //CAMBIAR ESTO EN PRODUCCION, SOLO ES PARA PRUEBAS
 
 const Login = () => {
   //Este es un ejemplo
+  const { setUser } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
   //Funcion para inicio de sesion
   const handleLogin = () => {
+    console.log("Email: ", email);
+    console.log("Password: ", password);
     try {
       //Validación campos vacíos
       if (!email.trim() || !password.trim()) {
@@ -43,6 +48,7 @@ const Login = () => {
             return;
           }
           // Si el inicio de sesión es exitoso, redirigir a Home
+          setUser(response.data);
           router.push("/home");
         })
         .catch((error) => {
@@ -103,14 +109,16 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Link href="/home" asChild>
-        {/* <Pressable onPress={handleLogin}> */}
-        <Pressable>
-          <View style={styles.loginButton}>
-            <Text style={styles.subtitle}>Entrar</Text>
-          </View>
-        </Pressable>
-      </Link>
+      {/* <Link href="/home" asChild> */}
+      <Pressable onPress={handleLogin}>
+        {/* <Pressable> */}
+        <View style={styles.loginButton}>
+          <Text style={styles.subtitle}>Entrar</Text>
+        </View>
+      </Pressable>
+      {/* </Link> */}
+
+      <Button title="BaseURL" onPress={() => console.log(baseUrl)} />
 
       <Link href="/register" asChild>
         <Pressable>
