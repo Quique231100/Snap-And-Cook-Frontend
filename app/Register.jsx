@@ -6,17 +6,21 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import React from "react";
 import Colors from "../assets/colors/Colors.js";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { useState } from "react";
 
+//Cambiar en produccion
 const baseUrl = "http://localhost:4000";
 
 const Register = () => {
+  const router = useRouter();
+
   // Estados para cada campo del formulario
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -37,34 +41,65 @@ const Register = () => {
       return;
     }
 
-    // Crear el objeto con los datos del usuario
-    const userData = {
-      nombre,
-      apellidos,
-      correo,
-      contrasena,
-      sexo,
-      edad: parseInt(edad, 10),
-      estatura: parseFloat(estatura),
-      peso: parseFloat(peso),
-      enfermedades,
-      alergias,
-    };
+    // Crear el objeto con los datos del usuario (ESTO ANTES DE ACTUALIZAR - QUIQUE)
+    // const userData = {
+    //   nombre,
+    //   apellidos,
+    //   correo,
+    //   contrasena,
+    //   sexo,
+    //   edad: parseInt(edad, 10),
+    //   estatura: parseFloat(estatura),
+    //   peso: parseFloat(peso),
+    //   enfermedades,
+    //   alergias,
+    // };
 
     try {
-      const response = await axios.post(baseUrl, userData);
+      //ESTO ES ANTES DE ACTUALIZAR - QUIQUE
+      // const response = await axios.post(baseUrl, userData);
 
-      // Manejar la respuesta del backend
-      if (response.status === 201) {
-        alert("Usuario registrado correctamente");
-        // Redirigir al usuario a la pantalla de inicio de sesión o dashboard
-      }
+      // // Manejar la respuesta del backend
+      // if (response.status === 201) {
+      //   alert("Usuario registrado correctamente");
+      //   // Redirigir al usuario a la pantalla de inicio de sesión o dashboard
+      // }
+      axios({
+        method: "post",
+        url: `${baseUrl}/users/sign-up`,
+        data: {
+          nombre: nombre,
+          apellidos: apellidos,
+          correo: correo,
+          contrasena: contrasena,
+          sexo: sexo,
+          edad: parseInt(edad, 10),
+          estatura: parseFloat(estatura),
+          peso: parseFloat(peso),
+        },
+      })
+        .then((response) => {
+          if (!response.data) {
+            Alert.alert("Error", "Datos incorrectos");
+            return;
+          }
+          // Si el inicio de sesión es exitoso, redirigir a Home
+          Alert.alert("Exito", "Registro exitoso, por favor inicia sesión");
+          router.push("/login");
+        })
+        .catch((error) => {
+          if (error.response && error.response.status === 401) {
+            Alert.alert("Error", "Datos incorrectos");
+          } else {
+            console.error("Error en la petición:", error);
+          }
+        });
     } catch (error) {
       console.error("Error al registrar el usuario:", error);
       if (error.response && error.response.status === 409) {
-        alert("El correo electrónico ya está en uso");
+        Alert.alert("El correo electrónico ya está en uso");
       } else {
-        alert("Error en el servidor. Inténtalo de nuevo más tarde.");
+        Alert.alert("Error en el servidor. Inténtalo de nuevo más tarde.");
       }
     }
   };
@@ -151,6 +186,7 @@ const Register = () => {
               keyboardType="email-address"
               value={correo}
               onChangeText={setCorreo}
+              autoCapitalize="none"
             />
           </View>
           {/* Contenedor de los input de las contraseñas */}

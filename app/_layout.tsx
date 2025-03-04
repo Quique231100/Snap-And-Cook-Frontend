@@ -5,9 +5,9 @@ export default function RootLayout() {
   return (
     <UserProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" /> {/* Pantalla de inicio */}
-        <Stack.Screen name="login" /> {/* Pantalla de inicio de sesión */}
-        <Stack.Screen name="register" /> {/* Pantalla de registro */}
+        <Stack.Screen name="index" options={{ title: "Index" }} />
+        <Stack.Screen name="login" options={{ title: "Login" }} />
+        <Stack.Screen name="register" options={{ title: "Register" }} />
         <Stack.Screen name="home" /> {/* Pantalla principal */}
       </Stack>
     </UserProvider>

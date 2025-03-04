@@ -26,8 +26,6 @@ const Login = () => {
 
   //Funcion para inicio de sesion
   const handleLogin = () => {
-    console.log("Email: ", email);
-    console.log("Password: ", password);
     try {
       //Validación campos vacíos
       if (!email.trim() || !password.trim()) {
@@ -109,18 +107,13 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      {/* <Link href="/home" asChild> */}
       <Pressable onPress={handleLogin}>
-        {/* <Pressable> */}
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
       </Pressable>
-      {/* </Link> */}
 
-      <Button title="BaseURL" onPress={() => console.log(baseUrl)} />
-
-      <Link href="/Register" asChild>
+      <Link href="/register" asChild>
         <Pressable>
           <View style={styles.registerButton}>
             <Text style={{ fontSize: 16, color: "#4C5454" }}>
