@@ -120,7 +120,7 @@ const Login = () => {
 
       <Button title="BaseURL" onPress={() => console.log(baseUrl)} />
 
-      <Link href="/register" asChild>
+      <Link href="/Register" asChild>
         <Pressable>
           <View style={styles.registerButton}>
             <Text style={{ fontSize: 16, color: "#4C5454" }}>
