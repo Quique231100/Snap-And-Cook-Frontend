@@ -1,4 +1,11 @@
-import { StyleSheet, Text, View, Dimensions } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  FlatList,
+  Image,
+} from "react-native";
 import React from "react";
 import Colors from "../../assets/colors/Colors";
 import { useUser } from "../../context/UserContext";
@@ -18,11 +25,11 @@ const datos = {
       text: "Mantente siempre hidratado tomando 3 litros de agua al dia",
       img: "https://www.prosaudesl.com/la-importancia-de-la-hidratacion-como-el-agua-impacta-en-tu-salud_img234714t1.jpg",
     },
-    {
-      id: 3,
-      text: "No olvides hacer ejercicio al menos 30 minutos al dia",
-      img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
-    },
+    // {
+    //   id: 3,
+    //   text: "No olvides hacer ejercicio al menos 30 minutos al dia",
+    //   img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
+    // },
   ],
 };
 
@@ -32,11 +39,28 @@ const Index = () => {
     <View style={styles.container}>
       <View style={styles.saluteCont}>
         <Text style={styles.welcomeTxt}>Bienvenido</Text>
-        <Text style={styles.userTxt}>{user.nombre}</Text>
+        {/* <Text style={styles.userTxt}>{user.nombre}</Text> */}
       </View>
 
       <View style={styles.advicesCont}>
-        <Text style={styles.subtitleTxt}>Recuerda ...</Text>
+        <View style={styles.recuerdaCont}>
+          <Text style={styles.subtitleTxt}>Recuerda ...</Text>
+        </View>
+        <View>
+          <FlatList
+            data={datos.advice}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.sliderItemCont}>
+                <View style={styles.descriptionItemCont}>
+                  <Text style={styles.txtDescriptionItem}>{item.text}</Text>
+                </View>
+                <Image source={{ uri: item.img }} style={styles.imgCont} />
+              </View>
+            )}
+            horizontal={true}
+          />
+        </View>
       </View>
     </View>
   );
@@ -70,6 +94,14 @@ const styles = StyleSheet.create({
     color: Colors.beige,
     fontSize: 24,
   },
+  advicesCont: {
+    width: screenWidth,
+    alignItems: "center",
+  },
+  recuerdaCont: {
+    backgroundColor: "red",
+    width: screenWidth,
+  },
   subtitleTxt: {
     fontSize: 24,
     color: Colors.grisOscuro,
@@ -77,7 +109,28 @@ const styles = StyleSheet.create({
   sliderItemCont: {
     width: screenWidth * 0.9,
     height: screenHeight * 0.25,
-    backgroundColor: Colors.beigeMasOscuro,
+    backgroundColor: Colors.beigeOscuro,
     borderRadius: 24,
+    justifyContent: "space-between",
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  descriptionItemCont: {
+    width: screenWidth * 0.45,
+    height: screenHeight * 0.25,
+    justifyContent: "center",
+    marginLeft: screenWidth * 0.025,
+  },
+  txtDescriptionItem: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: Colors.grisOscuro,
+  },
+  imgCont: {
+    width: screenWidth * 0.45,
+    height: screenHeight * 0.25,
+    resizeMode: "cover",
+    borderTopLeftRadius: 70,
+    borderBottomLeftRadius: 70,
   },
 });

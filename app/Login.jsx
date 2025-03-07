@@ -107,7 +107,8 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Pressable onPress={handleLogin}>
+      {/* <Pressable onPress={handleLogin}> */}
+      <Pressable onPress={() => router.push("/home")}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
