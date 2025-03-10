@@ -247,9 +247,8 @@ const Search = () => {
             <Pressable
               onPress={() =>
                 router.push({
-                  pathname: "/home/search/[id]",
+                  pathname: "/loged/search/recipe",
                   params: {
-                    id: item.id,
                     nombre: item.nombre,
                     img: item.img,
                     ingredientes: item.ingredientes,

@@ -1,16 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import Colors from "../../assets/colors/Colors";
+import Colors from "../../../assets/colors/Colors";
 
-const User = () => {
+const Favorites = () => {
   return (
     <View style={styles.container}>
-      <Text>User</Text>
+      <Text>Favorites</Text>
     </View>
   );
 };
 
-export default User;
+export default Favorites;
 
 const styles = StyleSheet.create({
   container: {

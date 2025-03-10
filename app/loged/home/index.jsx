@@ -9,8 +9,8 @@ import {
   ImageBackground,
 } from "react-native";
 import React, { useRef, useState, useCallback } from "react";
-import Colors from "../../assets/colors/Colors";
-import { useUser } from "../../context/UserContext";
+import Colors from "../../../assets/colors/Colors";
+import { useUser } from "../../../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
@@ -179,9 +179,8 @@ const Index = () => {
               <Pressable
                 onPress={() =>
                   router.push({
-                    pathname: "/home/search/[id]",
+                    pathname: "/loged/home/recipe",
                     params: {
-                      id: item.id,
                       nombre: item.nombre,
                       img: item.img,
                       ingredientes: item.ingredientes,

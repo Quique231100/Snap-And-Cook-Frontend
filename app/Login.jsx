@@ -47,7 +47,7 @@ const Login = () => {
           }
           // Si el inicio de sesión es exitoso, redirigir a Home
           setUser(response.data);
-          router.push("/home");
+          router.push("/loged");
         })
         .catch((error) => {
           if (error.response && error.response.status === 401) {
@@ -108,7 +108,7 @@ const Login = () => {
       </Link>
 
       {/* <Pressable onPress={handleLogin}> */}
-      <Pressable onPress={() => router.push("/home")}>
+      <Pressable onPress={() => router.push("/loged")}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
