@@ -4,6 +4,7 @@ import {
   Text,
   View,
   Dimensions,
+  FlatList,
 } from "react-native";
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
@@ -14,15 +15,13 @@ const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
 const RecetaPage = () => {
-  const {
-    id,
-    nombre,
-    img,
-    ingredientes,
-    instrucciones,
-    // ingredientes = [],
-    // instrucciones = [],
-  } = useLocalSearchParams();
+  const { id, nombre, img, ingredientes, instrucciones } =
+    useLocalSearchParams();
+
+  const ingredientesArray =
+    typeof ingredientes === "string"
+      ? ingredientes.replace(/[{}]/g, "").split(",")
+      : [];
 
   return (
     <View style={styles.container}>
@@ -41,25 +40,17 @@ const RecetaPage = () => {
           <Text style={styles.txtSubtitle}>Ingredietes</Text>
 
           <Text style={styles.txtAPI}>
-            {ingredientes.split(",").map((ingrediente, index) => (
-              <Text key={index}>
-                - {ingrediente.trim()}
-                {"\n"}
-              </Text>
-            ))}
+            <FlatList
+              data={ingredientesArray}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => <Text>- {item}</Text>}
+            />
           </Text>
         </View>
         <View style={styles.instruccionesCont}>
           <Text style={styles.txtSubtitle}>Instrucciones</Text>
-
-          <Text style={styles.txtAPI}>
-            {instrucciones.split(",").map((instruccion, index) => (
-              <Text key={index}>
-                - {instruccion.trim()}
-                {"\n"}
-              </Text>
-            ))}
-          </Text>
+          <Text>{instrucciones}</Text>
+          <Text style={styles.txtAPI}></Text>
         </View>
       </View>
     </View>
