@@ -66,8 +66,6 @@ export default function indexAnalyze() {
   };
 
   const analyzeImage = async () => {
-    console.log("Analizando imagen");
-
     if (!image) {
       Alert.alert("Error", "Selecciona una imagen antes de analizar");
       return;
