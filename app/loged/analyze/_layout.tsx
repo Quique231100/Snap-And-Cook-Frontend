@@ -6,6 +6,7 @@ export default function analyzeLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ title: "Analyze" }} />
+      <Stack.Screen name="recipe" />
     </Stack>
   );
 }

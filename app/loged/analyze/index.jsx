@@ -9,11 +9,15 @@ import {
   FlatList,
   Modal,
   TouchableOpacity,
+  ImageBackground,
+  ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import Colors from "../../../assets/colors/Colors";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 
 const baseUrl = "http://192.168.0.105:4000"; // CAMBIAR ESTO EN PRODUCCIÓN
 
@@ -25,6 +29,9 @@ export default function indexAnalyze() {
   const [modalVisible, setModalVisible] = useState(false);
   const [ingredients, setIngredients] = useState([]); // Estado para los ingredientes detectados
   const [loading, setLoading] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+
+  const router = useRouter();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -110,6 +117,7 @@ export default function indexAnalyze() {
 
           if (Array.isArray(ingredientsData) && ingredientsData.length > 0) {
             setIngredients(ingredientsData);
+            fetchRecipes(ingredientsData);
             Alert.alert("¡Listo!", "Los ingredientes han sido detectados");
           } else {
             setIngredients([]);
@@ -123,6 +131,22 @@ export default function indexAnalyze() {
     } catch (error) {
       console.error("Error en la ejecución", error);
       Alert.alert("Error", "No se pudo completar la ejecución.");
+    }
+  };
+
+  const fetchRecipes = async (ingredients) => {
+    try {
+      const response = await axios.post(`${baseUrl}/platillos/by-ingredients`, {
+        ingredientes: ingredients,
+      });
+      if (response.data && response.data.length > 0) {
+        setRecipes(response.data);
+      } else {
+        console.log("No se encontraron recetas");
+        setRecipes([]);
+      }
+    } catch (error) {
+      console.error("Error al obtener recetas:", error);
     }
   };
 
@@ -173,6 +197,52 @@ export default function indexAnalyze() {
             </Pressable>
           </View>
           <Text style={styles.txtRecetas}>Recetas recomendadas</Text>
+          <View style={styles.listCont}>
+            {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
+            <FlatList
+              data={recipes}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/loged/analyze/recipe",
+                      params: {
+                        nombre: item.nombre_platillo,
+                        img: item.imagen_platillo,
+                        ingredientes: item.ingredientes,
+                        instrucciones: item.instrucciones_platillo,
+                      },
+                    })
+                  }
+                >
+                  <View style={styles.itemCont}>
+                    <ImageBackground
+                      source={{ uri: item.imagen_platillo }}
+                      style={styles.imgItemCont}
+                    >
+                      <LinearGradient
+                        // Background Linear Gradient
+                        colors={["rgba(0,0,0,0.8)", "transparent"]}
+                        style={styles.background}
+                        start={{ x: 0.5, y: 1.1 }}
+                        end={{ x: 0.5, y: 0 }}
+                      />
+                      <View style={styles.txtItemCont}>
+                        <Text style={styles.txtItem}>
+                          {item.nombre_platillo}
+                        </Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </Pressable>
+              )}
+              showsVerticalScrollIndicator={false}
+              ItemSeparatorComponent={() => (
+                <View style={{ marginVertical: screenHeight * 0.015 }} />
+              )}
+            />
+          </View>
         </View>
       )}
 
@@ -206,14 +276,16 @@ export default function indexAnalyze() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: Colors.beige,
+    width: screenWidth,
+    height: screenHeight,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.beige,
   },
   titleCont: {
     width: screenWidth * 0.9,
     marginBottom: screenHeight * 0.03,
+    marginTop: screenHeight * -0.35,
   },
   title: {
     fontSize: 30,
@@ -301,5 +373,38 @@ const styles = StyleSheet.create({
   },
   modalItem: {
     fontSize: 16,
+  },
+  listCont: {
+    width: screenWidth * 0.9,
+    marginBottom: screenHeight * 0.23,
+  },
+  itemCont: {
+    backgroundColor: Colors.verdeGasolina,
+    height: screenHeight * 0.2,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  imgItemCont: {
+    resizeMode: "cover",
+    width: "100%",
+    height: "100%",
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: screenHeight * 0.2,
+  },
+  txtItemCont: {
+    height: "100%",
+    justifyContent: "flex-end",
+    marginLeft: "2%",
+    paddingBottom: "2%",
+  },
+  txtItem: {
+    color: Colors.beige,
+    fontSize: 30,
+    fontWeight: "bold",
   },
 });
