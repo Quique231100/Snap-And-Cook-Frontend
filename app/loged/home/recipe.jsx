@@ -14,15 +14,8 @@ const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
 const RecetaPage = () => {
-  const {
-    id,
-    nombre,
-    img,
-    ingredientes,
-    instrucciones,
-    // ingredientes = [],
-    // instrucciones = [],
-  } = useLocalSearchParams();
+  const { id, nombre, img, ingredientes, instrucciones } =
+    useLocalSearchParams();
 
   return (
     <View style={styles.container}>

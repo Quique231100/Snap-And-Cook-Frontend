@@ -9,6 +9,7 @@ import {
   Image,
   ImageBackground,
   Dimensions,
+  Alert,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import Colors from "../../../assets/colors/Colors";
@@ -185,6 +186,8 @@ const datosPrueba = {
   ],
 };
 
+const baseUrl = "http://192.168.0.105:4000"; //CAMBIAR ESTO EN PRODUCCION
+
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
@@ -194,27 +197,23 @@ const Search = () => {
 
   const router = useRouter();
 
-  const filterData = datosPrueba.dishes.filter((dish) =>
-    dish.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  const filterData = data.filter((dish) =>
+    dish.nombre_platillo.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const fecthData = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axios({
-        method: "get",
-        url: "https://magicloops.dev/api/loop/80082ec7-4934-4d57-830a-1f97b629f1c4/run?results=10",
-      });
-      setData(response.data.dishes);
-      console.log(response.data.dishes);
+      const response = await axios.get(`${baseUrl}/platillos/window`);
+      setData(response.data);
     } catch (error) {
-      console.error("Error en la ejecucion: ", error);
+      Alert.alert("Error", "Error en la ejecución");
     }
   };
 
   //Hook para renderizar los datos cuando se accede a esta ventana
-  // useEffect(() => {
-  //   fecthData();
-  // }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -242,25 +241,24 @@ const Search = () => {
         {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
         <FlatList
           data={filterData}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, id) => id.toString()}
           renderItem={({ item }) => (
             <Pressable
               onPress={() =>
                 router.push({
-                  pathname: "/home/search/[id]",
+                  pathname: "/loged/search/recipe",
                   params: {
-                    id: item.id,
-                    nombre: item.nombre,
-                    img: item.img,
+                    nombre: item.nombre_platillo,
+                    img: item.imagen_platillo,
                     ingredientes: item.ingredientes,
-                    instrucciones: item.instrucciones,
+                    instrucciones: item.instrucciones_platillo,
                   },
                 })
               }
             >
               <View style={styles.itemCont}>
                 <ImageBackground
-                  source={{ uri: item.img }}
+                  source={{ uri: item.imagen_platillo }}
                   style={styles.imgItemCont}
                 >
                   <LinearGradient
@@ -271,7 +269,7 @@ const Search = () => {
                     end={{ x: 0.5, y: 0 }}
                   />
                   <View style={styles.txtItemCont}>
-                    <Text style={styles.txtItem}>{item.nombre}</Text>
+                    <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
                   </View>
                 </ImageBackground>
               </View>
