@@ -285,7 +285,6 @@ const styles = StyleSheet.create({
   titleCont: {
     width: screenWidth * 0.9,
     marginBottom: screenHeight * 0.03,
-    marginTop: screenHeight * -0.35,
   },
   title: {
     fontSize: 30,
