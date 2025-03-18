@@ -13,9 +13,9 @@ import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors";
 import axios from "axios";
 import { useUser } from "../context/UserContext";
+import { supabase } from "../lib/supabase.ts";
 
 //const baseUrl = process.env.DB_HOST; //ESTO DEJO DE FUNCIONAR, SE NECESITA ANALIZAR COMO OBTENER EL VALOR DE LA VARIABLE DE ENTORNO
-const baseUrl = "http://localhost:4000"; //CAMBIAR ESTO EN PRODUCCION, SOLO ES PARA PRUEBAS
 
 const Login = () => {
   //Este es un ejemplo

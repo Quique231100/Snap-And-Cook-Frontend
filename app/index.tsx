@@ -1,6 +1,7 @@
 //Este es el archivo principal donde la app funciona correctamente
 
 //Importación de las ventanas de la aplicación
+import "react-native-url-polyfill/auto.js";
 import { Text, View, StyleSheet, Pressable, Image } from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
