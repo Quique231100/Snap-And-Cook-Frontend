@@ -5,9 +5,23 @@ import "react-native-url-polyfill/auto.js";
 import { Text, View, StyleSheet, Pressable, Image } from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
+import { Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.ts";
+import { useEffect, useState } from "react";
 
 //Función principal de la aplicación
 export default function Index() {
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+  }, []);
   return (
     <View style={styles.container}>
       <View style={styles.saluteContainer}>

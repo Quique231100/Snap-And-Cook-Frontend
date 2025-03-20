@@ -14,9 +14,7 @@ import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { useState } from "react";
-
-//Cambiar en produccion
-const baseUrl = "http://localhost:4000";
+import { supabase } from "../lib/supabase.ts";
 
 const Register = () => {
   const router = useRouter();
@@ -33,75 +31,52 @@ const Register = () => {
   const [peso, setPeso] = useState("");
   const [enfermedades, setEnfermedades] = useState("Ninguna");
   const [alergias, setAlergias] = useState("Ninguna");
+  const [loading, setLoading] = useState(false);
 
   // Función para manejar el registro
   const handleRegister = async () => {
-    if (contrasena !== confirmarContrasena) {
-      alert("Las contraseñas no coinciden");
+    if (
+      !nombre.trim() ||
+      !apellidos.trim() ||
+      !correo.trim() ||
+      !contrasena.trim()
+    ) {
+      Alert.alert("Error", "Todos los campos deben llenarse");
       return;
     }
 
-    // Crear el objeto con los datos del usuario (ESTO ANTES DE ACTUALIZAR - QUIQUE)
-    // const userData = {
-    //   nombre,
-    //   apellidos,
-    //   correo,
-    //   contrasena,
-    //   sexo,
-    //   edad: parseInt(edad, 10),
-    //   estatura: parseFloat(estatura),
-    //   peso: parseFloat(peso),
-    //   enfermedades,
-    //   alergias,
-    // };
+    if (contrasena !== confirmarContrasena) {
+      Alert.alert("Error", "Las contraseñas no coinciden");
+      return;
+    }
 
-    try {
-      //ESTO ES ANTES DE ACTUALIZAR - QUIQUE
-      // const response = await axios.post(baseUrl, userData);
-
-      // // Manejar la respuesta del backend
-      // if (response.status === 201) {
-      //   alert("Usuario registrado correctamente");
-      //   // Redirigir al usuario a la pantalla de inicio de sesión o dashboard
-      // }
-      axios({
-        method: "post",
-        url: `${baseUrl}/users/sign-up`,
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: correo,
+      password: contrasena,
+      options: {
         data: {
           nombre: nombre,
           apellidos: apellidos,
-          correo: correo,
-          contrasena: contrasena,
           sexo: sexo,
-          edad: parseInt(edad, 10),
-          estatura: parseFloat(estatura),
-          peso: parseFloat(peso),
+          edad: Number(edad),
+          peso: Number(peso),
+          estatura: Number(estatura),
         },
-      })
-        .then((response) => {
-          if (!response.data) {
-            Alert.alert("Error", "Datos incorrectos");
-            return;
-          }
-          // Si el inicio de sesión es exitoso, redirigir a Home
-          Alert.alert("Exito", "Registro exitoso, por favor inicia sesión");
-          router.push("/login");
-        })
-        .catch((error) => {
-          if (error.response && error.response.status === 401) {
-            Alert.alert("Error", "Datos incorrectos");
-          } else {
-            console.error("Error en la petición:", error);
-          }
-        });
-    } catch (error) {
-      console.error("Error al registrar el usuario:", error);
-      if (error.response && error.response.status === 409) {
-        Alert.alert("El correo electrónico ya está en uso");
-      } else {
-        Alert.alert("Error en el servidor. Inténtalo de nuevo más tarde.");
-      }
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      console.log("Error en signUp:", error);
+      Alert.alert("Error en registro", error.message);
+      return;
     }
+    Alert.alert(
+      "Éxito",
+      "Usuario registrado correctamente, revisa tu email para confirmar."
+    );
+    router.push("/login");
   };
 
   /* Función para los checkbox */

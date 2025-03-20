@@ -15,50 +15,31 @@ import axios from "axios";
 import { useUser } from "../context/UserContext";
 import { supabase } from "../lib/supabase.ts";
 
-//const baseUrl = process.env.DB_HOST; //ESTO DEJO DE FUNCIONAR, SE NECESITA ANALIZAR COMO OBTENER EL VALOR DE LA VARIABLE DE ENTORNO
-
 const Login = () => {
   //Este es un ejemplo
   const { setUser } = useUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   //Funcion para inicio de sesion
-  const handleLogin = () => {
-    try {
-      //Validación campos vacíos
-      if (!email.trim() || !password.trim()) {
-        Alert.alert("Error", "Debe llenar los campos para continuar");
-        return;
-      }
-      axios({
-        method: "post",
-        url: `${baseUrl}/users/sign-in`,
-        data: {
-          correo: email,
-          contrasena: password,
-        },
-      })
-        .then((response) => {
-          if (!response.data) {
-            Alert.alert("Error", "Correo o contraseña incorrectos");
-            return;
-          }
-          // Si el inicio de sesión es exitoso, redirigir a Home
-          setUser(response.data);
-          router.push("/loged");
-        })
-        .catch((error) => {
-          if (error.response && error.response.status === 401) {
-            Alert.alert("Error", "Correo o contraseña incorrectos");
-          } else {
-            console.error("Error en la petición:", error);
-          }
-        });
-    } catch (error) {
-      console.error("Error en la ejecución:", error);
+  const handleLogin = async () => {
+    //Validación campos vacíos
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Debe llenar los campos para continuar");
+      return;
     }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+    setLoading(false);
+    // setUser(data);
+    if (error) Alert.alert("Error al iniciar sesión", error);
+    router.push("/loged");
   };
 
   return (
@@ -107,8 +88,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      {/* <Pressable onPress={handleLogin}> */}
-      <Pressable onPress={() => router.push("/loged")}>
+      <Pressable onPress={handleLogin}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
