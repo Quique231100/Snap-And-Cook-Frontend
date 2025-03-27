@@ -8,11 +8,12 @@ import {
   Pressable,
   ImageBackground,
 } from "react-native";
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import Colors from "../../../assets/colors/Colors";
 import { useUser } from "../../../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { supabase } from "../../../lib/supabase";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
@@ -37,69 +38,10 @@ const datos = {
   ],
 };
 
-const datosPrueba = {
-  dishes: [
-    {
-      id: "1",
-      nombre: "Mostachol con Pan",
-      img: "https://www.shutterstock.com/image-photo/delicious-mostachol-dish-bread-red-600nw-2183362559.jpg",
-      ingredientes: [
-        "200g de mostachol",
-        "2 rebanadas de pan",
-        "Salsa de tomate",
-        "Queso rallado",
-        "Orégano",
-      ],
-      instrucciones: [
-        "Cocina el mostachol en agua hirviendo con sal durante 10 minutos.",
-        "Calienta la salsa de tomate en una sartén.",
-        "Mezcla la pasta con la salsa y sirve en un plato.",
-        "Añade queso rallado y orégano por encima.",
-        "Acompaña con pan tostado.",
-      ],
-    },
-    {
-      id: "2",
-      nombre: "Ensalada Mixta",
-      img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-bj-jfAo5TSgHaiSm_5EvSUB5djsCcOSHEQ&s",
-      ingredientes: [
-        "Lechuga",
-        "Tomate",
-        "Pepino",
-        "Aceite de oliva",
-        "Sal y pimienta",
-      ],
-      instrucciones: [
-        "Lava y corta todos los ingredientes en trozos pequeños.",
-        "Mezcla en un bol grande.",
-        "Aliña con aceite de oliva, sal y pimienta al gusto.",
-        "Sirve frío.",
-      ],
-    },
-    {
-      id: "3",
-      nombre: "Pollo Tandoori",
-      img: "https://st2.depositphotos.com/1066961/9489/i/950/depositphotos_94891990-stock-photo-tandoori-chicken-salad-overhead-view.jpg",
-      ingredientes: [
-        "2 pechugas de pollo",
-        "Yogur natural",
-        "Especias tandoori",
-        "Jugo de limón",
-        "Sal",
-      ],
-      instrucciones: [
-        "Mezcla el yogur con las especias tandoori y el jugo de limón.",
-        "Marina el pollo en la mezcla durante al menos 2 horas.",
-        "Hornea a 200°C durante 25 minutos.",
-        "Sirve caliente acompañado de arroz o ensalada.",
-      ],
-    },
-  ],
-};
-
 const Index = () => {
   const { user } = useUser();
   const [paginationIndex, setPaginationIndex] = useState(0);
+  const [mealsRand, setMealsRand] = useState([]);
 
   const router = useRouter();
 
@@ -117,11 +59,27 @@ const Index = () => {
     { viewabilityConfig, onViewableItemsChanged },
   ]);
 
+  const getRandomMeals = async () => {
+    const { data, error } = await supabase.rpc("getrandommeals", {
+      limit_count: 5,
+    });
+
+    if (error) console.error("Error al obtener platillos", error);
+
+    setMealsRand(data);
+  };
+
+  useEffect(() => {
+    getRandomMeals();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.saluteCont}>
         <Text style={styles.welcomeTxt}>Bienvenido</Text>
-        {/* <Text style={styles.userTxt}>{user.nombre}</Text> */}
+        <Text style={styles.userTxt}>
+          {user.nombre} {user.apellidos}
+        </Text>
       </View>
 
       <View style={styles.advicesCont}>
@@ -173,25 +131,25 @@ const Index = () => {
 
         <View style={styles.recetasCont}>
           <FlatList
-            data={datosPrueba.dishes}
-            keyExtractor={(item) => item.id.toString()}
+            data={mealsRand}
+            keyExtractor={(item, id) => id.toString()}
             renderItem={({ item }) => (
               <Pressable
                 onPress={() =>
                   router.push({
                     pathname: "/loged/home/recipe",
                     params: {
-                      nombre: item.nombre,
-                      img: item.img,
+                      nombre: item.nombre_platillo,
+                      img: item.imagen_platillo,
                       ingredientes: item.ingredientes,
-                      instrucciones: item.instrucciones,
+                      instrucciones: item.instrucciones_platillo,
                     },
                   })
                 }
               >
                 <View style={styles.itemRecipeCont}>
                   <ImageBackground
-                    source={{ uri: item.img }}
+                    source={{ uri: item.imagen_platillo }}
                     style={styles.imgItemRecipeCont}
                   >
                     <LinearGradient
@@ -202,7 +160,7 @@ const Index = () => {
                       end={{ x: 0.5, y: 0 }}
                     />
                     <View style={styles.txtItemCont}>
-                      <Text style={styles.txtItem}>{item.nombre}</Text>
+                      <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
                     </View>
                   </ImageBackground>
                 </View>

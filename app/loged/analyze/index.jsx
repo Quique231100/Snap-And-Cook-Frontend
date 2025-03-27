@@ -19,13 +19,32 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
-const baseUrl = "http://192.168.0.105:4000"; // CAMBIAR ESTO EN PRODUCCIÓN
-
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
+// const datos = {
+//   advice: [
+//     {
+//       id: 1,
+//       text: "Que las verduras nunca falten en tu plato",
+//       img: "https://hips.hearstapps.com/hmg-prod/images/frutas-1552246920.jpg?crop=0.669xw:1.00xh;0.166xw,0&resize=1200:*",
+//     },
+//     {
+//       id: 2,
+//       text: "Mantente siempre hidratado tomando 3 litros de agua al día",
+//       img: "https://www.prosaudesl.com/la-importancia-de-la-hidratacion-como-el-agua-impacta-en-tu-salud_img234714t1.jpg",
+//     },
+//     {
+//       id: 3,
+//       text: "No olvides hacer ejercicio al menos 30 minutos al dia",
+//       img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
+//     },
+//   ],
+// };
+
 export default function indexAnalyze() {
   const [image, setImage] = useState(null);
+  const [image64, setImage64] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [ingredients, setIngredients] = useState([]); // Estado para los ingredientes detectados
   const [loading, setLoading] = useState(false);
@@ -40,16 +59,20 @@ export default function indexAnalyze() {
         "Permiso denegado",
         "Necesitas otorgar permisos para acceder a la galería."
       );
+      return;
     }
-    let result = await ImagePicker.launchImageLibraryAsync({
+
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      base64: true,
     });
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      setImage64(result.assets[0].base64);
     }
   };
 
@@ -60,95 +83,80 @@ export default function indexAnalyze() {
         "Permiso denegado",
         "Necesitas otorgar permisos para acceder a la cámara."
       );
+      return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       quality: 1,
+      base64: true,
     });
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      setImage64(result.assets[0].base64);
     }
   };
 
   const analyzeImage = async () => {
-    if (!image) {
+    if (!image || !image64) {
       Alert.alert("Error", "Selecciona una imagen antes de analizar");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const formData = new FormData();
-      formData.append("image", {
-        uri: image,
-        name: "image.jpg",
-        type: "image/jpeg",
-      });
+      setLoading(true);
+      console.log("Enviando imagen a API...");
 
-      axios({
-        method: "post",
-        url: `${baseUrl}/api/analyze`,
-        data: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
+      const response = await axios({
+        method: "POST",
+        url: "https://detect.roboflow.com/comida-lz8pz/4",
+        params: {
+          api_key: "cRp3GkSKrhrMgEgwuVpL",
         },
-      })
-        .then((response) => {
-          setLoading(false);
-          if (!response.data || !response.data.results) {
-            Alert.alert("Error", "Error en el análisis");
-            return;
-          }
-
-          let ingredientsData = response.data.results[2];
-
-          // Verificamos si el resultado es un string y lo convertimos a array
-          if (typeof ingredientsData === "string") {
-            try {
-              ingredientsData = JSON.parse(ingredientsData);
-            } catch (error) {
-              Alert.alert("Error", "No se pudieron procesar los ingredientes.");
-              return;
-            }
-          }
-
-          if (Array.isArray(ingredientsData) && ingredientsData.length > 0) {
-            setIngredients(ingredientsData);
-            fetchRecipes(ingredientsData);
-            Alert.alert("¡Listo!", "Los ingredientes han sido detectados");
-          } else {
-            setIngredients([]);
-            Alert.alert("Información", "No se encontraron ingredientes.");
-          }
-        })
-        .catch((error) => {
-          console.error("Error en la petición:", error);
-          Alert.alert("Error", "No se pudo completar el análisis.");
-        });
-    } catch (error) {
-      console.error("Error en la ejecución", error);
-      Alert.alert("Error", "No se pudo completar la ejecución.");
-    }
-  };
-
-  const fetchRecipes = async (ingredients) => {
-    try {
-      const response = await axios.post(`${baseUrl}/platillos/by-ingredients`, {
-        ingredientes: ingredients,
+        data: `data:image/jpeg;base64,${image64}`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
-      if (response.data && response.data.length > 0) {
-        setRecipes(response.data);
-      } else {
-        console.log("No se encontraron recetas");
-        setRecipes([]);
-      }
+      const detectedFood = [
+        ...new Set(
+          response.data.predictions.map((prediction) => prediction.class)
+        ),
+      ];
+      setIngredients(detectedFood);
+      console.log("ingredientes detectados: ", detectedFood);
     } catch (error) {
-      console.error("Error al obtener recetas:", error);
+      console.error(
+        "Error en análisis de imagen:",
+        error.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        `Hubo un problema al identificar los ingredientes: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    } finally {
+      setLoading(false);
     }
   };
+
+  // const fetchRecipes = async (ingredients) => {
+  //   try {
+  //     const response = await axios.post(`${baseUrl}/platillos/by-ingredients`, {
+  //       ingredientes: ingredients,
+  //     });
+  //     if (response.data && response.data.length > 0) {
+  //       setRecipes(response.data);
+  //     } else {
+  //       console.log("No se encontraron recetas");
+  //       setRecipes([]);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error al obtener recetas:", error);
+  //   }
+  // };
 
   useEffect(() => {
     if (image) {
@@ -161,131 +169,134 @@ export default function indexAnalyze() {
       <View style={styles.titleCont}>
         <Text style={styles.title}>Analyze</Text>
       </View>
-      <View style={styles.analyzeCont}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.image} />
-        ) : (
-          <View style={{ gap: 20 }}>
-            <Pressable onPress={pickImage}>
-              <View style={styles.btnAnalyzeCont}>
-                <Text style={styles.txtBtnAnalyze}>Seleccionar imagen</Text>
-              </View>
-            </Pressable>
+      <ScrollView>
+        <View style={styles.analyzeCont}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.image} />
+          ) : (
+            <View style={{ gap: 20 }}>
+              <Pressable onPress={pickImage}>
+                <View style={styles.btnAnalyzeCont}>
+                  <Text style={styles.txtBtnAnalyze}>Seleccionar imagen</Text>
+                </View>
+              </Pressable>
 
-            <Pressable onPress={openCamera}>
-              <View style={styles.btnAnalyzeCont}>
-                <Text style={styles.txtBtnAnalyze}>Tomar fotografía</Text>
-              </View>
-            </Pressable>
+              <Pressable onPress={openCamera}>
+                <View style={styles.btnAnalyzeCont}>
+                  <Text style={styles.txtBtnAnalyze}>Tomar fotografía</Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
+        </View>
+        {image && (
+          <View style={styles.afterAnalyzeCont}>
+            <View style={styles.btnAfterAnalyzeCont}>
+              <Pressable onPress={() => setImage(null)}>
+                <View style={styles.btnAfterAnalyze}>
+                  <Text style={styles.txtSubirOtraImagen}>
+                    Subir otra imagen
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable onPress={() => setModalVisible(true)}>
+                <View style={styles.btnIngredients}>
+                  <Text style={styles.txtVerIngredientes}>
+                    Ver ingredientes
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+            <Text style={styles.txtRecetas}>Recetas recomendadas</Text>
+            <View style={styles.listCont}>
+              {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
+              {/* <FlatList
+                data={datos.advice}
+                keyExtractor={(item, id) => id.toString()}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/loged/analyze/recipe",
+                        params: {
+                          nombre: item.nombre_platillo,
+                          img: item.imagen_platillo,
+                          ingredientes: item.ingredientes,
+                          instrucciones: item.instrucciones_platillo,
+                        },
+                      })
+                    }
+                  >
+                    <View style={styles.itemCont}>
+                      <ImageBackground
+                        source={{ uri: item.img }}
+                        style={styles.imgItemCont}
+                      >
+                        <LinearGradient
+                          // Background Linear Gradient
+                          colors={["rgba(0,0,0,0.8)", "transparent"]}
+                          style={styles.background}
+                          start={{ x: 0.5, y: 1.1 }}
+                          end={{ x: 0.5, y: 0 }}
+                        />
+                        <View style={styles.txtItemCont}>
+                          <Text style={styles.txtItem}>{item.text}</Text>
+                        </View>
+                      </ImageBackground>
+                    </View>
+                  </Pressable>
+                )}
+                hor
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => (
+                  <View style={{ marginVertical: screenHeight * 0.015 }} />
+                )}
+              /> */}
+            </View>
           </View>
         )}
-      </View>
-
-      {image && (
-        <View style={styles.afterAnalyzeCont}>
-          <View style={styles.btnAfterAnalyzeCont}>
-            <Pressable onPress={() => setImage(null)}>
-              <View style={styles.btnAfterAnalyze}>
-                <Text style={styles.txtSubirOtraImagen}>Subir otra imagen</Text>
-              </View>
-            </Pressable>
-
-            <Pressable onPress={() => setModalVisible(true)}>
-              <View style={styles.btnIngredients}>
-                <Text style={styles.txtVerIngredientes}>Ver ingredientes</Text>
-              </View>
-            </Pressable>
-          </View>
-          <Text style={styles.txtRecetas}>Recetas recomendadas</Text>
-          <View style={styles.listCont}>
-            {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
-            <FlatList
-              data={recipes}
-              keyExtractor={(item, id) => id.toString()}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() =>
-                    router.push({
-                      pathname: "/loged/analyze/recipe",
-                      params: {
-                        nombre: item.nombre_platillo,
-                        img: item.imagen_platillo,
-                        ingredientes: item.ingredientes,
-                        instrucciones: item.instrucciones_platillo,
-                      },
-                    })
-                  }
-                >
-                  <View style={styles.itemCont}>
-                    <ImageBackground
-                      source={{ uri: item.imagen_platillo }}
-                      style={styles.imgItemCont}
-                    >
-                      <LinearGradient
-                        // Background Linear Gradient
-                        colors={["rgba(0,0,0,0.8)", "transparent"]}
-                        style={styles.background}
-                        start={{ x: 0.5, y: 1.1 }}
-                        end={{ x: 0.5, y: 0 }}
-                      />
-                      <View style={styles.txtItemCont}>
-                        <Text style={styles.txtItem}>
-                          {item.nombre_platillo}
-                        </Text>
-                      </View>
-                    </ImageBackground>
-                  </View>
-                </Pressable>
-              )}
-              showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => (
-                <View style={{ marginVertical: screenHeight * 0.015 }} />
-              )}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Modal para mostrar ingredientes */}
-      <Modal
-        transparent={true}
-        animationType="fade"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackground}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
+        {/* Modal para mostrar ingredientes */}
+        <Modal
+          transparent={true}
+          animationType="fade"
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Ingredientes</Text>
-            <FlatList
-              data={ingredients}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => (
-                <Text style={styles.modalItem}>• {item}</Text>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Ingredientes</Text>
+              <FlatList
+                data={ingredients}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <Text style={styles.modalItem}>• {item}</Text>
+                )}
+                scrollEnabled={false}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: "center",
+    flex: 1,
+    paddingTop: screenHeight * 0.08,
+    //justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.beige,
   },
   titleCont: {
     width: screenWidth * 0.9,
     marginBottom: screenHeight * 0.03,
-    marginTop: screenHeight * -0.35,
   },
   title: {
     fontSize: 30,

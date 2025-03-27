@@ -10,9 +10,9 @@ import {
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
-import Colors from "../assets/colors/Colors";
+import Colors from "../assets/colors/Colors.js";
 import axios from "axios";
-import { useUser } from "../context/UserContext";
+import { useUser } from "../context/UserContext.tsx";
 import { supabase } from "../lib/supabase.ts";
 
 const Login = () => {
@@ -37,8 +37,8 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    // setUser(data);
     if (error) Alert.alert("Error al iniciar sesión", error);
+    setUser(data.user.user_metadata);
     router.push("/loged");
   };
 

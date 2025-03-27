@@ -31,7 +31,7 @@ const RecetaPage = () => {
       </ImageBackground>
       <View style={styles.recipeCont}>
         <View style={styles.ingredientesCont}>
-          <Text style={styles.txtSubtitle}>Ingredietes</Text>
+          <Text style={styles.txtSubtitle}>Ingredientes</Text>
 
           <Text style={styles.txtAPI}>
             {ingredientes.split(",").map((ingrediente, index) => (
