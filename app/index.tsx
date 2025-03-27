@@ -2,12 +2,22 @@
 
 //Importación de las ventanas de la aplicación
 import "react-native-url-polyfill/auto.js";
-import { Text, View, StyleSheet, Pressable, Image } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  Dimensions,
+} from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase.ts";
 import { useEffect, useState } from "react";
+
+const screenHeight = Dimensions.get("window").height;
+const screenWidth = Dimensions.get("window").width;
 
 //Función principal de la aplicación
 export default function Index() {
@@ -24,8 +34,13 @@ export default function Index() {
   }, []);
   return (
     <View style={styles.container}>
+      <View style={styles.snapImgCont}>
+        <Image
+          source={require("@/assets/images/Snap&Cook_Logotipo_01.png")}
+          style={styles.snapImg}
+        />
+      </View>
       <View style={styles.saluteContainer}>
-        <Text style={styles.txtTitle}>Bienvenido</Text>
         <Text style={styles.txtSubtitle}>
           Cualquier receta en tan solo un "shoot"
         </Text>
@@ -65,6 +80,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.verdeGasolina,
     alignItems: "center",
     justifyContent: "center",
+  },
+  snapImgCont: {
+    width: screenWidth * 0.9,
+    height: screenHeight * 0.15,
+  },
+  snapImg: {
+    resizeMode: "contain",
+    width: "100%",
+    height: "100%",
   },
   saluteContainer: {
     justifyContent: "center",
