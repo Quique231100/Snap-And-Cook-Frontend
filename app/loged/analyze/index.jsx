@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { supabase } from "../../../lib/supabase.ts";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
@@ -106,8 +107,6 @@ export default function indexAnalyze() {
 
     try {
       setLoading(true);
-      console.log("Enviando imagen a API...");
-
       const response = await axios({
         method: "POST",
         url: "https://detect.roboflow.com/comida-lz8pz/4",
@@ -121,11 +120,20 @@ export default function indexAnalyze() {
       });
       const detectedFood = [
         ...new Set(
-          response.data.predictions.map((prediction) => prediction.class)
+          response.data.predictions.map(
+            (prediction) =>
+              prediction.class.charAt(0).toUpperCase() +
+              prediction.class.slice(1).toLowerCase()
+          )
         ),
       ];
-      setIngredients(detectedFood);
-      console.log("ingredientes detectados: ", detectedFood);
+      if (detectedFood.length === 0) {
+        Alert.alert("Error", "No se encontraron ingredientes en la imagen");
+      } else {
+        setIngredients(detectedFood);
+        fetchRecipes(detectedFood);
+        Alert.alert("Éxito", "Alimentos detectados. Revisa la lista.");
+      }
     } catch (error) {
       console.error(
         "Error en análisis de imagen:",
@@ -142,21 +150,17 @@ export default function indexAnalyze() {
     }
   };
 
-  // const fetchRecipes = async (ingredients) => {
-  //   try {
-  //     const response = await axios.post(`${baseUrl}/platillos/by-ingredients`, {
-  //       ingredientes: ingredients,
-  //     });
-  //     if (response.data && response.data.length > 0) {
-  //       setRecipes(response.data);
-  //     } else {
-  //       console.log("No se encontraron recetas");
-  //       setRecipes([]);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error al obtener recetas:", error);
-  //   }
-  // };
+  const fetchRecipes = async (detectedIngredients) => {
+    const { data, error } = await supabase.rpc("getmealswithingredients", {
+      ingredientes_input: detectedIngredients,
+    });
+    if (error) {
+      console.error("Error al obtener recetas: ", error);
+      Alert.alert("Error", "No se encontraron recetas");
+      setRecipes([]);
+    }
+    setRecipes(data);
+  };
 
   useEffect(() => {
     if (image) {
@@ -211,8 +215,8 @@ export default function indexAnalyze() {
             <Text style={styles.txtRecetas}>Recetas recomendadas</Text>
             <View style={styles.listCont}>
               {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
-              {/* <FlatList
-                data={datos.advice}
+              <FlatList
+                data={recipes}
                 keyExtractor={(item, id) => id.toString()}
                 renderItem={({ item }) => (
                   <Pressable
@@ -230,7 +234,7 @@ export default function indexAnalyze() {
                   >
                     <View style={styles.itemCont}>
                       <ImageBackground
-                        source={{ uri: item.img }}
+                        source={{ uri: item.imagen_platillo }}
                         style={styles.imgItemCont}
                       >
                         <LinearGradient
@@ -241,18 +245,20 @@ export default function indexAnalyze() {
                           end={{ x: 0.5, y: 0 }}
                         />
                         <View style={styles.txtItemCont}>
-                          <Text style={styles.txtItem}>{item.text}</Text>
+                          <Text style={styles.txtItem}>
+                            {item.nombre_platillo}
+                          </Text>
                         </View>
                       </ImageBackground>
                     </View>
                   </Pressable>
                 )}
-                hor
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
                 ItemSeparatorComponent={() => (
                   <View style={{ marginVertical: screenHeight * 0.015 }} />
                 )}
-              /> */}
+              />
             </View>
           </View>
         )}
@@ -268,17 +274,25 @@ export default function indexAnalyze() {
             activeOpacity={1}
             onPress={() => setModalVisible(false)}
           >
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Ingredientes</Text>
-              <FlatList
-                data={ingredients}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                  <Text style={styles.modalItem}>• {item}</Text>
-                )}
-                scrollEnabled={false}
-              />
-            </View>
+            {ingredients.length === 0 ? (
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>
+                  No se encontraron ingredientes en la imagen
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Ingredientes</Text>
+                <FlatList
+                  data={ingredients}
+                  keyExtractor={(item, index) => index.toString()}
+                  renderItem={({ item }) => (
+                    <Text style={styles.modalItem}>• {item}</Text>
+                  )}
+                  scrollEnabled={false}
+                />
+              </View>
+            )}
           </TouchableOpacity>
         </Modal>
       </ScrollView>
@@ -387,7 +401,6 @@ const styles = StyleSheet.create({
   },
   listCont: {
     width: screenWidth * 0.9,
-    marginBottom: screenHeight * 0.23,
   },
   itemCont: {
     backgroundColor: Colors.verdeGasolina,
