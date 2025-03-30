@@ -12,12 +12,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
 import axios from "axios";
-import { useUser } from "../context/UserContext.tsx";
+import { useUser } from "../context/UserContext"; // Importar el contexto
 import { supabase } from "../lib/supabase.ts";
 
 const Login = () => {
-  //Este es un ejemplo
-  const { setUser } = useUser();
+  const { setUser } = useUser(); // Obtener la función para actualizar el usuario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +24,7 @@ const Login = () => {
 
   //Funcion para inicio de sesion
   const handleLogin = async () => {
-    //Validación campos vacíos
+    // Validación de campos vacíos
     if (!email.trim() || !password.trim()) {
       Alert.alert("Error", "Debe llenar los campos para continuar");
       return;
@@ -37,8 +36,24 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    if (error) Alert.alert("Error al iniciar sesión", error);
-    setUser(data.user.user_metadata);
+
+    if (error) {
+      console.log("Error en signInWithPassword:", error);
+
+      // Verificar si el mensaje es un string o un objeto
+      const errorMessage =
+        typeof error.message === "string"
+          ? error.message
+          : JSON.stringify(error.message);
+
+      Alert.alert("Error al iniciar sesión", errorMessage);
+      return;
+    }
+
+    // Guardar la información del usuario en el contexto
+    setUser(data.user);
+
+    Alert.alert("Éxito", "Inicio de sesión exitoso");
     router.push("/loged");
   };
 
