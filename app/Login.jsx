@@ -37,7 +37,10 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    if (error) Alert.alert("Error al iniciar sesión", error);
+    if (error) {
+      Alert.alert("Error al iniciar sesión", error);
+      return;
+    }
     setUser(data.user.user_metadata);
     router.push("/loged");
   };
@@ -88,7 +91,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Pressable onPress={handleLogin}>
+      <Pressable onPress={() => handleLogin()}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
