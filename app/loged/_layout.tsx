@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
 import Colors from "@/assets/colors/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { UserProvider } from "../../context/UserContext";
+
 
 export default function TabLayout() {
   return (
@@ -82,3 +84,9 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+// return (
+//   <UserProvider>
+//     <User />
+//   </UserProvider>
+// );

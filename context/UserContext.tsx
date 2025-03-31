@@ -1,13 +1,22 @@
-//Este archivo es para poder usar los datos del usuario de manera global una vez iniciada la sesion
 import React, { createContext, useContext, useState } from "react";
 
 const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Estado inicial del usuario
+  const [user, setUser] = useState(null);
+
+  // Función para actualizar los datos del usuario
+  const updateUser = (newData) => {
+    setUser((prevUser) => ({ ...prevUser, ...newData }));
+  };
+
+  // Función para cerrar sesión
+  const logout = () => {
+    setUser(null); // Reinicia el estado del usuario
+  };
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, updateUser, logout }}>
       {children}
     </UserContext.Provider>
   );
@@ -20,3 +29,4 @@ export const useUser = () => {
   }
   return context;
 };
+
