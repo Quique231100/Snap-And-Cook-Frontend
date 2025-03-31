@@ -7,6 +7,8 @@ import {
   Image,
   Pressable,
   ImageBackground,
+  ScrollView,
+  Alert,
 } from "react-native";
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import { HelloWave } from "@/components/HelloWave";
@@ -42,7 +44,9 @@ const datos = {
 const Index = () => {
   const { user } = useUser();
   const [paginationIndex, setPaginationIndex] = useState(0);
+  const [advice, setAdvice] = useState([]);
   const [mealsRand, setMealsRand] = useState([]);
+  const [lastMeals, setLastMeals] = useState([]);
   const router = useRouter();
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -59,6 +63,19 @@ const Index = () => {
     { viewabilityConfig, onViewableItemsChanged },
   ]);
 
+  const getAdvice = async () => {
+    const { data, error } = await supabase.rpc("obtener_recomendaciones_salud");
+    if (error) {
+      Alert.alert(
+        "Error en salud",
+        "No se pudo obtener las recomendaciones de salud"
+      );
+      setAdvice([]);
+    } else {
+      setAdvice(data);
+    }
+  };
+
   const getPopularMeals = async () => {
     const { data, error } = await supabase.rpc(
       "obtener_platillos_por_popularidad",
@@ -70,6 +87,18 @@ const Index = () => {
     if (error) console.error("Error al obtener platillos", error);
 
     setMealsRand(data);
+  };
+
+  const getLastMeals = async (usuarioId) => {
+    const { data, error } = await supabase.rpc("get_ultimos_vistos", {
+      user_uuid: usuarioId,
+    });
+
+    if (error) {
+      console.error("Error al obtener historial:", error);
+      setLastMeals([]);
+    }
+    setLastMeals(data);
   };
 
   const registerRecipeViews = async (recipeId) => {
@@ -87,7 +116,7 @@ const Index = () => {
         .select(); //Esto devuelve el registro insertado
 
       if (error) throw error;
-      console.log("Vista registrada correctamente:", data); // Debería mostrar el registro
+      console.log("Vista registrada correctamente :", data); // Debería mostrar el registro
       return data;
     } catch (error) {
       console.error("Error registrando vista de receta:", error);
@@ -97,93 +126,185 @@ const Index = () => {
 
   useEffect(() => {
     getPopularMeals();
+    getAdvice();
+    getLastMeals(user.sub);
   }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.saluteCont}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <HelloWave />
-          <Text style={styles.welcomeTxt}>Bienvenido</Text>
-        </View>
-        <Text style={styles.userTxt}>
-          {user.nombre} {user.apellidos}
-        </Text>
-      </View>
-
-      <View style={styles.advicesCont}>
-        <View style={styles.recuerdaCont}>
-          <Text style={styles.subtitleTxt}>Recuerda 🤔</Text>
-        </View>
-
-        <FlatList
-          data={datos.advice}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.flatlistCont}>
-              <View style={styles.itemCont}>
-                <View style={styles.descriptionItemCont}>
-                  <Text style={styles.txtDescriptionItem}>{item.text}</Text>
-                </View>
-                <Image source={{ uri: item.img }} style={styles.imgCont} />
-              </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: screenWidth * 0.9,
+            justifyContent: "space-between",
+          }}
+        >
+          {/* <View style={{ backgroundColor: "red" }}> */}
+          <View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <HelloWave />
+              <Text style={styles.welcomeTxt}>Bienvenido</Text>
             </View>
-          )}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          viewabilityConfigCallbackPairs={
-            viewabilityConfigCallbackPairs.current
-          }
-        />
-
-        <View style={styles.recetasTxtCont}>
-          <Text style={styles.subtitleTxt}>🔥 Tendencia esta semana</Text>
-        </View>
-
-        <View style={styles.recetasCont}>
-          <FlatList
-            data={mealsRand}
-            keyExtractor={(item, id) => id.toString()}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => {
-                  console.log(item);
-                  registerRecipeViews(item.id);
-                  router.push({
-                    pathname: "/loged/home/recipe",
-                    params: {
-                      nombre: item.nombre_platillo,
-                      img: item.imagen_platillo,
-                      ingredientes: item.ingredientes,
-                      instrucciones: item.instrucciones_platillo,
-                    },
-                  });
-                }}
-              >
-                <View style={styles.itemRecipeCont}>
-                  <ImageBackground
-                    source={{ uri: item.imagen_platillo }}
-                    style={styles.imgItemRecipeCont}
-                  >
-                    <LinearGradient
-                      colors={["rgba(0,0,0,0.8)", "transparent"]}
-                      style={styles.background}
-                      start={{ x: 0.5, y: 1.1 }}
-                      end={{ x: 0.5, y: 0 }}
-                    />
-                    <View style={styles.txtItemCont}>
-                      <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
-                    </View>
-                  </ImageBackground>
-                </View>
-              </Pressable>
-            )}
-            horizontal
-            showsHorizontalScrollIndicator={false}
+            <Text style={styles.userTxt}>
+              {user.nombre} {user.apellidos}
+            </Text>
+          </View>
+          <Image
+            source={require("../../../assets/images/Snap&Cook_Logotipo_03.png")}
+            style={{
+              resizeMode: "cover",
+              width: screenWidth * 0.3,
+              height: screenHeight * 0.15,
+            }}
           />
         </View>
       </View>
+      <ScrollView>
+        <View style={styles.advicesCont}>
+          <View style={styles.recuerdaCont}>
+            <Text style={styles.subtitleTxt}>Recuerda 🤔</Text>
+          </View>
+
+          <FlatList
+            data={advice}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.flatlistCont}>
+                <View style={styles.itemCont}>
+                  <View style={styles.descriptionItemCont}>
+                    <Text style={styles.txtTitleItem}>{item.titulo}</Text>
+                    <Text style={styles.txtDescriptionItem}>{item.frase}</Text>
+                  </View>
+                  <Image source={{ uri: item.imagen }} style={styles.imgCont} />
+                </View>
+              </View>
+            )}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            viewabilityConfigCallbackPairs={
+              viewabilityConfigCallbackPairs.current
+            }
+          />
+
+          <View style={styles.dotCont}>
+            {advice.map((_, id) => (
+              <View
+                key={id}
+                style={[
+                  styles.flatlistDot,
+                  {
+                    backgroundColor:
+                      paginationIndex === id
+                        ? Colors.beigeMasOscuro
+                        : Colors.beigeOscuro,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          <View style={styles.recetasTxtCont}>
+            <Text style={styles.subtitleTxt}>🔥 Tendencia esta semana</Text>
+          </View>
+
+          <View style={styles.recetasCont}>
+            <FlatList
+              data={mealsRand}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    console.log(item);
+                    registerRecipeViews(item.id);
+                    router.push({
+                      pathname: "/loged/home/recipe",
+                      params: {
+                        nombre: item.nombre_platillo,
+                        img: item.imagen_platillo,
+                        ingredientes: item.ingredientes,
+                        instrucciones: item.instrucciones_platillo,
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.itemRecipeCont}>
+                    <ImageBackground
+                      source={{ uri: item.imagen_platillo }}
+                      style={styles.imgItemRecipeCont}
+                    >
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.8)", "transparent"]}
+                        style={styles.background}
+                        start={{ x: 0.5, y: 1.1 }}
+                        end={{ x: 0.5, y: 0 }}
+                      />
+                      <View style={styles.txtItemCont}>
+                        <Text style={styles.txtItem}>
+                          {item.nombre_platillo}
+                        </Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </Pressable>
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+
+          <View style={styles.recetasTxtCont}>
+            <Text style={styles.subtitleTxt}>⏱️ Últimas recetas vistas</Text>
+          </View>
+
+          <View style={styles.recetasCont}>
+            <FlatList
+              data={lastMeals}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    console.log(item);
+                    registerRecipeViews(item.id);
+                    router.push({
+                      pathname: "/loged/home/recipe",
+                      params: {
+                        nombre: item.nombre_platillo,
+                        img: item.imagen_platillo,
+                        ingredientes: item.ingredientes,
+                        instrucciones: item.instrucciones_platillo,
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.itemRecipeCont}>
+                    <ImageBackground
+                      source={{ uri: item.imagen_platillo }}
+                      style={styles.imgItemRecipeCont}
+                    >
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.8)", "transparent"]}
+                        style={styles.background}
+                        start={{ x: 0.5, y: 1.1 }}
+                        end={{ x: 0.5, y: 0 }}
+                      />
+                      <View style={styles.txtItemCont}>
+                        <Text style={styles.txtItem}>
+                          {item.nombre_platillo}
+                        </Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </Pressable>
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -195,13 +316,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.beige,
     alignItems: "center",
+    paddingBottom: screenHeight * 0.01,
   },
   saluteCont: {
     width: screenWidth,
     height: screenHeight * 0.22,
-    paddingTop: screenHeight * 0.08,
-    paddingLeft: screenWidth * 0.06,
-    gap: screenHeight * 0.01,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: Colors.verdeMuyOscuro,
     borderBottomRightRadius: 34,
     borderBottomLeftRadius: 34,
@@ -245,8 +366,14 @@ const styles = StyleSheet.create({
   descriptionItemCont: {
     width: screenWidth * 0.45,
     height: screenHeight * 0.25,
+    gap: screenHeight * 0.01,
     justifyContent: "center",
     marginLeft: screenWidth * 0.025,
+  },
+  txtTitleItem: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.grisOscuro,
   },
   txtDescriptionItem: {
     fontSize: 16,
