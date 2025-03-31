@@ -8,21 +8,26 @@ import {
   Alert, 
   TouchableOpacity,
   KeyboardAvoidingView,
-  Platform 
+  Platform,
+  ActivityIndicator
 } from "react-native";
 import Colors from "../../../assets/colors/Colors";
-import { useUser } from "../../../context/UserContext.tsx";
+import { useUser } from "../../../context/UserContext";
+import { useNavigation } from "@react-navigation/native";
+import { CommonActions } from "@react-navigation/native";
 
 const User = () => {
-  const { user, logout, updateUser } = useUser();
+  const { user, isAuthenticated, updateUser, logout, loadingAuth } = useUser();
+  const navigation = useNavigation();
+  
   const [userData, setUserData] = useState({
-    nombre: user.nombre || "",
-    apellidos: user.apellidos || "",
-    correo: user.email || "",
-    sexo: user.sexo || "",
-    edad: user.edad ? String(user.edad) : "",
-    estatura: user.estatura ? String(user.estatura) : "",
-    peso: user.peso ? String(user.peso) : "",
+    nombre: "",
+    apellidos: "",
+    correo: "",
+    sexo: "",
+    edad: "",
+    estatura: "",
+    peso: "",
   });
 
   const [editando, setEditando] = useState(false);
@@ -31,18 +36,32 @@ const User = () => {
     estatura: "",
     peso: "",
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setUserData({
-      nombre: user.nombre || "",
-      apellidos: user.apellidos || "",
-      correo: user.email || "",
-      sexo: user.sexo || "",
-      edad: user.edad ? String(user.edad) : "",
-      estatura: user.estatura ? String(user.estatura) : "",
-      peso: user.peso ? String(user.peso) : "",
-    });
+    if (user) {
+      setUserData({
+        nombre: user.nombre || "",
+        apellidos: user.apellidos || "",
+        correo: user.email || "",
+        sexo: user.sexo || "",
+        edad: user.edad ? String(user.edad) : "",
+        estatura: user.estatura ? String(user.estatura) : "",
+        peso: user.peso ? String(user.peso) : "",
+      });
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated && !loadingAuth) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
+      );
+    }
+  }, [isAuthenticated, loadingAuth, navigation]);
 
   const validarCampos = () => {
     const nuevosErrores = {
@@ -97,43 +116,73 @@ const User = () => {
           setErrores({ ...errores, [field]: "" });
         }
       }
-    }
+    } 
   };
 
-  const guardarCambios = () => {
+  const guardarCambios = async () => {
     if (!validarCampos()) {
       Alert.alert("Error", "Por favor corrige los errores antes de guardar");
       return;
     }
 
-    const datosActualizados = {
-      ...userData,
-      edad: parseFloat(userData.edad),
-      estatura: parseFloat(userData.estatura),
-      peso: parseFloat(userData.peso),
-    };
-
-    updateUser(datosActualizados);
-    setEditando(false);
-    Alert.alert("Éxito", "Datos guardados correctamente");
+    setLoading(true);
+    try {
+      await updateUser({
+        nombre: userData.nombre,
+        apellidos: userData.apellidos,
+        email: userData.correo,
+        sexo: userData.sexo,
+        edad: parseFloat(userData.edad),
+        estatura: parseFloat(userData.estatura),
+        peso: parseFloat(userData.peso),
+      });
+      
+      Alert.alert("Éxito", "Datos guardados correctamente");
+      setEditando(false);
+    } catch (error) {
+      Alert.alert("Error", "No se pudieron guardar los cambios");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const cerrarSesion = () => {
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await logout();
+    } catch (error) {
+      Alert.alert("Error", "No se pudo cerrar sesión");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmLogout = () => {
     Alert.alert(
       "Cerrar Sesión",
       "¿Estás seguro que deseas cerrar sesión?",
       [
-        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
         { 
           text: "Sí, cerrar sesión", 
-          onPress: () => {
-            logout();
-            Alert.alert("Sesión cerrada", "Vuelve pronto");
-          } 
+          onPress: handleLogout
         }
       ]
     );
   };
+
+  if (loading || loadingAuth) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -146,22 +195,23 @@ const User = () => {
       >
         <Text style={styles.title}>Perfil de Usuario</Text>
 
-        {/* Campos NO editables */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Nombre</Text>
           <TextInput 
-            style={[styles.input, styles.disabledInput]} 
-            value={userData.nombre} 
-            editable={false}
+            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            value={userData.nombre}
+            onChangeText={(text) => handleChange("nombre", text)} 
+            editable={editando}
           />
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Apellidos</Text>
           <TextInput 
-            style={[styles.input, styles.disabledInput]} 
-            value={userData.apellidos} 
-            editable={false}
+            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            value={userData.apellidos}
+            onChangeText={(text) => handleChange("apellidos", text)} 
+            editable={editando}
           />
         </View>
 
@@ -177,13 +227,13 @@ const User = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Sexo</Text>
           <TextInput 
-            style={[styles.input, styles.disabledInput]} 
-            value={userData.sexo} 
-            editable={false}
+            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            value={userData.sexo}
+            onChangeText={(text) => handleChange("sexo", text)} 
+            editable={editando}
           />
         </View>
 
-        {/* Campos editables */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Edad</Text>
           <TextInput 
@@ -223,41 +273,57 @@ const User = () => {
           {errores.peso ? <Text style={styles.errorText}>{errores.peso}</Text> : null}
         </View>
 
-        {/* Botones */}
         <View style={styles.buttonContainer}>
           {editando ? (
             <>
               <TouchableOpacity 
                 style={[styles.button, styles.saveButton]}
                 onPress={guardarCambios}
+                disabled={loading}
               >
-                <Text style={styles.buttonText}>Guardar Cambios</Text>
+                <Text style={styles.buttonText}>
+                  {loading ? "Guardando..." : "Guardar Cambios"}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.button, styles.cancelButton]}
                 onPress={() => {
                   setEditando(false);
                   setErrores({ edad: "", estatura: "", peso: "" });
+                  if (user) {
+                    setUserData({
+                      nombre: user.nombre || "",
+                      apellidos: user.apellidos || "",
+                      correo: user.email || "",
+                      sexo: user.sexo || "",
+                      edad: user.edad ? String(user.edad) : "",
+                      estatura: user.estatura ? String(user.estatura) : "",
+                      peso: user.peso ? String(user.peso) : "",
+                    });
+                  }
                 }}
+                disabled={loading}
               >
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity 
-              style={[styles.button, styles.editButton]}
-              onPress={() => setEditando(true)}
-            >
-              <Text style={styles.buttonText}>Editar Información</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity 
+                style={[styles.button, styles.editButton]}
+                onPress={() => setEditando(true)}
+              >
+                <Text style={styles.buttonText}>Editar Información</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.button, styles.logoutButton]}
+                onPress={confirmLogout}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>Cerrar Sesión</Text>
+              </TouchableOpacity>
+            </>
           )}
-          
-          <TouchableOpacity 
-            style={[styles.button, styles.logoutButton]}
-            onPress={cerrarSesion}
-          >
-            <Text style={styles.buttonText}>Cerrar Sesión</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -271,9 +337,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.beige,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.beige,
+  },
   scrollContainer: {
     padding: 20,
-    paddingBottom: 40, // Espacio extra para que los botones no queden pegados abajo
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,
@@ -313,7 +385,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 25,
-    marginBottom: 20,
   },
   button: {
     padding: 15,
@@ -322,7 +393,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   editButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: "#1E3A8A", // Azul oscuro
   },
   saveButton: {
     backgroundColor: "#4CAF50",
@@ -339,5 +410,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
-export default UserProfileScreen;
