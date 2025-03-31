@@ -32,7 +32,6 @@ const RecetaPage = () => {
       <View style={styles.recipeCont}>
         <View style={styles.ingredientesCont}>
           <Text style={styles.txtSubtitle}>Ingredientes</Text>
-
           <Text style={styles.txtAPI}>
             {ingredientes.split(",").map((ingrediente, index) => (
               <Text key={index}>

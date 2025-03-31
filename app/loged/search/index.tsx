@@ -18,11 +18,13 @@ import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
 const Search = () => {
+  const { user } = useUser();
   const [busqueda, setBusqueda] = useState("");
   const [meals, setMeals] = useState([]);
 
@@ -41,6 +43,29 @@ const Search = () => {
       console.log(error);
     } else {
       setMeals(data);
+    }
+  };
+
+  const registerRecipeViews = async (recipeId) => {
+    if (!user || !user.sub) return;
+    console.log("Enviando receta con id: ", recipeId);
+    try {
+      const { data, error } = await supabase
+        .from("platillos_vistas")
+        .insert([
+          {
+            id_platillo: parseInt(recipeId, 10),
+            id_user: user.sub,
+          },
+        ])
+        .select(); //Esto devuelve el registro insertado
+
+      if (error) throw error;
+      console.log("Vista registrada correctamente men try:", data); // Debería mostrar el registro
+      return data;
+    } catch (error) {
+      console.error("Error registrando vista de receta en catch:", error);
+      return null;
     }
   };
 
@@ -77,7 +102,8 @@ const Search = () => {
           keyExtractor={(item, id) => id.toString()}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() =>
+              onPress={() => {
+                registerRecipeViews(item.id);
                 router.push({
                   pathname: "/loged/search/recipe",
                   params: {
@@ -86,8 +112,8 @@ const Search = () => {
                     ingredientes: item.ingredientes,
                     instrucciones: item.instrucciones_platillo,
                   },
-                })
-              }
+                });
+              }}
             >
               <View style={styles.itemCont}>
                 <ImageBackground

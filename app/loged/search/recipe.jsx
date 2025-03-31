@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import Colors from "../../../assets/colors/Colors";
+import Colors from "../../../assets/colors/Colors.js";
 import { LinearGradient } from "expo-linear-gradient";
 
 const screenWidth = Dimensions.get("screen").width;
@@ -39,18 +39,17 @@ const RecetaPage = () => {
         <View style={styles.ingredientesCont}>
           <Text style={styles.txtSubtitle}>Ingredientes</Text>
 
-          <Text style={styles.txtAPI}>
-            <FlatList
-              data={ingredientesArray}
-              keyExtractor={(item, id) => id.toString()}
-              renderItem={({ item }) => <Text>- {item}</Text>}
-            />
-          </Text>
+          <FlatList
+            data={ingredientesArray}
+            keyExtractor={(item, id) => id.toString()}
+            renderItem={({ item }) => (
+              <Text style={styles.txtAPI}>- {item}</Text>
+            )}
+          />
         </View>
         <View style={styles.instruccionesCont}>
           <Text style={styles.txtSubtitle}>Instrucciones</Text>
-          <Text>{instrucciones}</Text>
-          <Text style={styles.txtAPI}></Text>
+          <Text style={styles.txtAPI}>{instrucciones}</Text>
         </View>
       </View>
     </View>

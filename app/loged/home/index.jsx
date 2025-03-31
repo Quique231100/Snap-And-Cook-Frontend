@@ -9,6 +9,7 @@ import {
   ImageBackground,
 } from "react-native";
 import React, { useRef, useState, useCallback, useEffect } from "react";
+import { HelloWave } from "@/components/HelloWave";
 import Colors from "../../../assets/colors/Colors";
 import { useUser } from "../../../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
@@ -42,7 +43,6 @@ const Index = () => {
   const { user } = useUser();
   const [paginationIndex, setPaginationIndex] = useState(0);
   const [mealsRand, setMealsRand] = useState([]);
-
   const router = useRouter();
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -59,24 +59,53 @@ const Index = () => {
     { viewabilityConfig, onViewableItemsChanged },
   ]);
 
-  const getRandomMeals = async () => {
-    const { data, error } = await supabase.rpc("getrandommeals", {
-      limit_count: 5,
-    });
+  const getPopularMeals = async () => {
+    const { data, error } = await supabase.rpc(
+      "obtener_platillos_por_popularidad",
+      {
+        limit_count: 5,
+      }
+    );
 
     if (error) console.error("Error al obtener platillos", error);
 
     setMealsRand(data);
   };
 
+  const registerRecipeViews = async (recipeId) => {
+    if (!user || !user.sub) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("platillos_vistas")
+        .insert([
+          {
+            id_platillo: parseInt(recipeId, 10),
+            id_user: user.sub,
+          },
+        ])
+        .select(); //Esto devuelve el registro insertado
+
+      if (error) throw error;
+      console.log("Vista registrada correctamente:", data); // Debería mostrar el registro
+      return data;
+    } catch (error) {
+      console.error("Error registrando vista de receta:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    getRandomMeals();
+    getPopularMeals();
   }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.saluteCont}>
-        <Text style={styles.welcomeTxt}>Bienvenido</Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <HelloWave />
+          <Text style={styles.welcomeTxt}>Bienvenido</Text>
+        </View>
         <Text style={styles.userTxt}>
           {user.nombre} {user.apellidos}
         </Text>
@@ -84,7 +113,7 @@ const Index = () => {
 
       <View style={styles.advicesCont}>
         <View style={styles.recuerdaCont}>
-          <Text style={styles.subtitleTxt}>Recuerda ...</Text>
+          <Text style={styles.subtitleTxt}>Recuerda 🤔</Text>
         </View>
 
         <FlatList
@@ -108,25 +137,8 @@ const Index = () => {
           }
         />
 
-        <View style={styles.dotCont}>
-          {datos.advice.map((_, id) => (
-            <View
-              key={id}
-              style={[
-                styles.flatlistDot,
-                {
-                  backgroundColor:
-                    paginationIndex === id
-                      ? Colors.beigeMasOscuro
-                      : Colors.beigeOscuro,
-                },
-              ]}
-            />
-          ))}
-        </View>
-
         <View style={styles.recetasTxtCont}>
-          <Text style={styles.subtitleTxt}>Recetas recomendadas</Text>
+          <Text style={styles.subtitleTxt}>🔥 Tendencia esta semana</Text>
         </View>
 
         <View style={styles.recetasCont}>
@@ -135,7 +147,9 @@ const Index = () => {
             keyExtractor={(item, id) => id.toString()}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() =>
+                onPress={() => {
+                  console.log(item);
+                  registerRecipeViews(item.id);
                   router.push({
                     pathname: "/loged/home/recipe",
                     params: {
@@ -144,8 +158,8 @@ const Index = () => {
                       ingredientes: item.ingredientes,
                       instrucciones: item.instrucciones_platillo,
                     },
-                  })
-                }
+                  });
+                }}
               >
                 <View style={styles.itemRecipeCont}>
                   <ImageBackground
@@ -153,7 +167,6 @@ const Index = () => {
                     style={styles.imgItemRecipeCont}
                   >
                     <LinearGradient
-                      // Background Linear Gradient
                       colors={["rgba(0,0,0,0.8)", "transparent"]}
                       style={styles.background}
                       start={{ x: 0.5, y: 1.1 }}
