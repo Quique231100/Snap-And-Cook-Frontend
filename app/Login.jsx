@@ -52,9 +52,37 @@ const Login = () => {
 
     // Guardar la información del usuario en el contexto
     setUser(data.user);
-
-    Alert.alert("Éxito", "Inicio de sesión exitoso");
     router.push("/loged");
+  };
+
+  const getRandomMeals = async () => {
+    try {
+      const id = await fetchUserId(); // Obtener el ID INT8 del usuario
+      if (!id) return;
+
+      const { data: meals, error } = await supabase.rpc("getrandommeals", {
+        limit_count: 5,
+      });
+
+      if (error) {
+        console.error("Error al obtener platillos", error);
+        return;
+      }
+
+      const favoritos = await fetchFavoritos(id); // Obtener los IDs de favoritos
+      setFavoritosIds(favoritos); // Guardar los IDs de favoritos
+
+      // Convertir los IDs de las recetas a números y asignar `isFavorito`
+      const mealsWithFavorito = meals.map((meal) => ({
+        ...meal,
+        isFavorito: favoritos.includes(Number(meal.id)), // Convertir `meal.id` a número
+      }));
+
+      console.log("Recetas con favoritos asignados:", mealsWithFavorito); // Verificar las recetas
+      setMealsRand(mealsWithFavorito);
+    } catch (error) {
+      console.error("Error al obtener recetas aleatorias:", error);
+    }
   };
 
   return (
