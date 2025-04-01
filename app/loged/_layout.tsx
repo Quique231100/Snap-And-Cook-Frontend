@@ -15,7 +15,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="Home"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
@@ -28,7 +28,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Search"
+        name="search"
         options={{
           title: "Search",
           tabBarIcon: ({ color, focused }) => (
@@ -41,7 +41,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Analyze"
+        name="analyze"
         options={{
           title: "Analyze",
           tabBarIcon: ({ color, focused }) => (
@@ -54,7 +54,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Favorites"
+        name="favorites"
         options={{
           title: "Favorites",
           tabBarIcon: ({ color, focused }) => (
@@ -67,7 +67,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="User"
+        name="user"
         options={{
           title: "User",
           tabBarIcon: ({ color, focused }) => (

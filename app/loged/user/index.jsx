@@ -1,16 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import Colors from "../../assets/colors/Colors";
+import Colors from "../../../assets/colors/Colors";
 
-const Search = () => {
+const User = () => {
   return (
     <View style={styles.container}>
-      <Text>Search</Text>
+      <Text>User</Text>
     </View>
   );
 };
 
-export default Search;
+export default User;
 
 const styles = StyleSheet.create({
   container: {

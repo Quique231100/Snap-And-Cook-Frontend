@@ -4,14 +4,96 @@ import {
   Text,
   View,
   TextInput,
+  TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import React from "react";
 import Colors from "../assets/colors/Colors.js";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { useState } from "react";
+import { supabase } from "../lib/supabase.ts";
 
 const Register = () => {
+  const router = useRouter();
+
+  // Estados para cada campo del formulario
+  const [nombre, setNombre] = useState("");
+  const [apellidos, setApellidos] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
+  const [sexo, setSexo] = useState("");
+  const [edad, setEdad] = useState("");
+  const [estatura, setEstatura] = useState("");
+  const [peso, setPeso] = useState("");
+  const [enfermedades, setEnfermedades] = useState("Ninguna");
+  const [alergias, setAlergias] = useState("Ninguna");
+  const [loading, setLoading] = useState(false);
+
+  // Función para manejar el registro
+  const handleRegister = async () => {
+    if (
+      !nombre.trim() ||
+      !apellidos.trim() ||
+      !correo.trim() ||
+      !contrasena.trim()
+    ) {
+      Alert.alert("Error", "Todos los campos deben llenarse");
+      return;
+    }
+
+    if (contrasena !== confirmarContrasena) {
+      Alert.alert("Error", "Las contraseñas no coinciden");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: correo,
+      password: contrasena,
+      options: {
+        data: {
+          nombre: nombre,
+          apellidos: apellidos,
+          sexo: sexo,
+          edad: Number(edad),
+          peso: Number(peso),
+          estatura: Number(estatura),
+        },
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      console.log("Error en signUp:", error);
+      Alert.alert("Error en registro", error.message);
+      return;
+    }
+    Alert.alert(
+      "Éxito",
+      "Usuario registrado correctamente, revisa tu email para confirmar."
+    );
+    router.push("/login");
+  };
+
+  /* Función para los checkbox */
+  const Checkbox = ({ label, checked, onChange }) => {
+    return (
+      <TouchableOpacity onPress={onChange} style={styles.checkboxContainer}>
+        <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
+        <Text style={styles.checkboxLabel}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  /* Función para elegir el tipo de sexo */
+  const handleSexoChange = (selectedSexo) => {
+    setSexo(selectedSexo);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.saluteCont}>
@@ -20,7 +102,7 @@ const Register = () => {
           Regístrate para comenzar la aventura
         </Text>
 
-        <Link href="/Login" asChild>
+        <Link href="/login" asChild>
           <Pressable>
             <View style={styles.loginBtn}>
               <Text style={styles.txtLoginBtn}>
@@ -49,6 +131,8 @@ const Register = () => {
                 placeholder="Nombre"
                 placeholderTextColor={"#F4E7D4"}
                 style={styles.txtInput}
+                value={nombre}
+                onChangeText={setNombre}
               />
             </View>
             {/* Input de los apellidos */}
@@ -60,6 +144,8 @@ const Register = () => {
                 placeholder="Apellidos"
                 placeholderTextColor={"#F4E7D4"}
                 style={styles.txtInput}
+                value={apellidos}
+                onChangeText={setApellidos}
               />
             </View>
           </View>
@@ -73,6 +159,9 @@ const Register = () => {
               placeholderTextColor={"#F4E7D4"}
               style={styles.txtInput}
               keyboardType="email-address"
+              value={correo}
+              onChangeText={setCorreo}
+              autoCapitalize="none"
             />
           </View>
           {/* Contenedor de los input de las contraseñas */}
@@ -87,6 +176,8 @@ const Register = () => {
                 placeholderTextColor={"#F4E7D4"}
                 style={styles.txtInput}
                 secureTextEntry={true}
+                value={contrasena}
+                onChangeText={setContrasena}
               />
             </View>
             {/* Input de confirmar la contraseña */}
@@ -99,12 +190,10 @@ const Register = () => {
                 placeholderTextColor={"#F4E7D4"}
                 style={styles.txtInput}
                 secureTextEntry={true}
+                value={confirmarContrasena}
+                onChangeText={setConfirmarContrasena}
               />
             </View>
-          </View>
-          {/* Este es el contenedor para marcar sexo del usuario */}
-          <View style={styles.sexCont}>
-            <Text style={styles.subtitle}>Apartado para checkbox de Sexo</Text>
           </View>
           {/* Este es el input de la estatura */}
           <View style={styles.inputSizeCont}>
@@ -116,7 +205,29 @@ const Register = () => {
               placeholderTextColor={"#F4E7D4"}
               style={styles.txtInput}
               keyboardType="numeric"
+              value={estatura}
+              onChangeText={setEstatura}
             />
+          </View>
+          {/* Este es el contenedor para marcar sexo del usuario */}
+          <View style={styles.sexCont}>
+            <View style={styles.sexHeader}>
+              <Ionicons name="male" size={24} color="#F4E7D4" />
+              <Ionicons name="female" size={24} color="#F4E7D4" />
+              <Text style={styles.sexLabel}>Sexo</Text>
+            </View>
+            <View style={styles.checkboxGroup}>
+              <Checkbox
+                label="Femenino"
+                checked={sexo === "Femenino"}
+                onChange={() => handleSexoChange("Femenino")}
+              />
+              <Checkbox
+                label="Masculino"
+                checked={sexo === "Masculino"}
+                onChange={() => handleSexoChange("Masculino")}
+              />
+            </View>
           </View>
           {/* Este es el input de la edad*/}
           <View style={styles.inputAgeCont}>
@@ -128,6 +239,8 @@ const Register = () => {
               placeholderTextColor={"#F4E7D4"}
               style={styles.txtInput}
               keyboardType="number-pad"
+              value={edad}
+              onChangeText={setEdad}
             />
           </View>
           {/* Este es el input del peso */}
@@ -140,10 +253,12 @@ const Register = () => {
               placeholderTextColor={"#F4E7D4"}
               style={styles.txtInput}
               keyboardType="numeric"
+              value={peso}
+              onChangeText={setPeso}
             />
           </View>
           {/* Botón para el registro de datos*/}
-          <Pressable onPress={() => console.log("Registro")}>
+          <Pressable onPress={handleRegister}>
             <View style={styles.registerBtn}>
               <Text style={styles.txtRegisterBtn}>Registrar</Text>
             </View>
@@ -211,10 +326,22 @@ const styles = StyleSheet.create({
   },
   sexCont: {
     width: "100%",
-    backgroundColor: "green",
+    backgroundColor: "#12685D",
     height: "10%",
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: "4%",
+  },
+  sexHeader: {
+    flexDirection: "row",
+    alignItems: "left",
+    marginBottom: 10,
+  },
+  sexLabel: {
+    fontSize: 16,
+    color: Colors.beige,
   },
   inputCont: {
     flexDirection: "row",
@@ -257,7 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#12685D",
     borderRadius: 8,
     gap: 10,
-    marginBottom: "4%",
+    marginTop: "4%",
   },
   inputAgeCont: {
     flexDirection: "row",
@@ -267,6 +394,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 10,
     marginBottom: "4%",
+    marginTop: "4%",
   },
   inputWeightCont: {
     flexDirection: "row",
@@ -287,6 +415,30 @@ const styles = StyleSheet.create({
     marginBottom: "20%",
   },
   txtRegisterBtn: {
+    fontSize: 16,
+    color: Colors.beige,
+  },
+  checkboxGroup: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checkbox: {
+    height: 20,
+    width: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Colors.beige,
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.beige,
+  },
+  checkboxLabel: {
     fontSize: 16,
     color: Colors.beige,
   },

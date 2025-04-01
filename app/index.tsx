@@ -1,16 +1,46 @@
 //Este es el archivo principal donde la app funciona correctamente
 
 //Importación de las ventanas de la aplicación
-import { Text, View, StyleSheet, Pressable, Image } from "react-native";
+import "react-native-url-polyfill/auto.js";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  Dimensions,
+} from "react-native";
 import { Link } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
+import { Session } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase.ts";
+import { useEffect, useState } from "react";
+
+const screenHeight = Dimensions.get("window").height;
+const screenWidth = Dimensions.get("window").width;
 
 //Función principal de la aplicación
 export default function Index() {
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+  }, []);
   return (
     <View style={styles.container}>
+      <View style={styles.snapImgCont}>
+        <Image
+          source={require("@/assets/images/Snap&Cook_Logotipo_01.png")}
+          style={styles.snapImg}
+        />
+      </View>
       <View style={styles.saluteContainer}>
-        <Text style={styles.txtTitle}>Bienvenido</Text>
         <Text style={styles.txtSubtitle}>
           Cualquier receta en tan solo un "shoot"
         </Text>
@@ -24,7 +54,7 @@ export default function Index() {
       </View>
 
       <View style={styles.btnContainer}>
-        <Link href="/Login" asChild>
+        <Link href="/login" asChild>
           <Pressable>
             <View style={styles.loginBtn}>
               <Text style={styles.txtLoginBtn}>Iniciar sesión</Text>
@@ -32,7 +62,7 @@ export default function Index() {
           </Pressable>
         </Link>
 
-        <Link href="/Register" asChild>
+        <Link href="/register" asChild>
           <Pressable>
             <View style={styles.registerBtn}>
               <Text style={styles.txtRegisterBtn}>Crear una cuenta</Text>
@@ -50,6 +80,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.verdeGasolina,
     alignItems: "center",
     justifyContent: "center",
+  },
+  snapImgCont: {
+    width: screenWidth * 0.9,
+    height: screenHeight * 0.15,
+  },
+  snapImg: {
+    resizeMode: "contain",
+    width: "100%",
+    height: "100%",
   },
   saluteContainer: {
     justifyContent: "center",
