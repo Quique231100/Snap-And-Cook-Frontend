@@ -67,19 +67,32 @@ const User = () => {
       <ScrollView>
         <View style={styles.userCont}>
           <Text style={styles.subtitle}>Correo</Text>
-          <TextInput value={email} onChangeText={setEmail} />
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+          />
 
           <Text style={styles.subtitle}>Nombre</Text>
-          <TextInput value={nombre} onChangeText={setNombre} />
+          <TextInput
+            style={styles.input}
+            value={nombre}
+            onChangeText={setNombre}
+          />
 
           <Text style={styles.subtitle}>Apellidos</Text>
-          <TextInput value={apellidos} onChangeText={setApellidos} />
+          <TextInput
+            style={styles.input}
+            value={apellidos}
+            onChangeText={setApellidos}
+          />
 
           <Text style={styles.subtitle}>Sexo</Text>
-          <TextInput value={sexo} onChangeText={setSexo} />
+          <TextInput style={styles.input} value={sexo} onChangeText={setSexo} />
 
           <Text style={styles.subtitle}>Edad</Text>
           <TextInput
+            style={styles.input}
             value={edad}
             onChangeText={setEdad}
             keyboardType="numeric"
@@ -87,6 +100,7 @@ const User = () => {
 
           <Text style={styles.subtitle}>Peso</Text>
           <TextInput
+            style={styles.input}
             value={peso}
             onChangeText={setPeso}
             keyboardType="numeric"
@@ -94,14 +108,15 @@ const User = () => {
 
           <Text style={styles.subtitle}>Estatura</Text>
           <TextInput
+            style={styles.input}
             value={estatura}
             onChangeText={setEstatura}
             keyboardType="numeric"
           />
         </View>
         <Pressable onPress={() => guardarDatos()}>
-          <View>
-            <Text>Guardar</Text>
+          <View style={styles.btn}>
+            <Text style={styles.txtBtn}>Guardar</Text>
           </View>
         </Pressable>
       </ScrollView>
@@ -128,9 +143,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: Colors.verdeMuyOscuro,
   },
+  userCont: {
+    width: screenWidth * 0.9,
+    gap: screenHeight * 0.02,
+  },
   subtitle: {
     fontSize: 24,
     fontWeight: "400",
     color: Colors.verdeMuyOscuro,
+  },
+  input: {
+    backgroundColor: "red",
+  },
+  btn: {
+    width: screenWidth * 0.6,
+    backgroundColor: Colors.grisOscuro,
   },
 });
