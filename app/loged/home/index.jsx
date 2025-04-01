@@ -17,6 +17,7 @@ import { useUser } from "../../../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase";
+import { Ionicons } from "@expo/vector-icons"; // Importación para el ícono del botón de favorito
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
@@ -27,6 +28,7 @@ const Index = () => {
   const [advice, setAdvice] = useState([]);
   const [mealsRand, setMealsRand] = useState([]);
   const [lastMeals, setLastMeals] = useState([]);
+  const [favoritosIds, setFavoritosIds] = useState([]); // IDs de los favoritos
   const router = useRouter();
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -64,9 +66,20 @@ const Index = () => {
       }
     );
 
-    if (error) console.error("Error al obtener platillos", error);
+    if (error) {
+      console.error("Error al obtener platillos", error);
+      return;
+    }
 
-    setMealsRand(data);
+    // Agregar la propiedad `isFavorito` a cada platillo
+    const updatedMeals = data.map((meal) => ({
+      ...meal,
+      isFavorito: favoritosIds.includes(meal.id), // Comparar con los IDs de favoritos
+    }));
+
+    console.log("Platillos populares con estado de favorito:", updatedMeals);
+
+    setMealsRand(updatedMeals); // Actualizar el estado con los platillos y su estado de favorito
   };
 
   const getLastMeals = async (usuarioId) => {
@@ -93,7 +106,7 @@ const Index = () => {
             id_user: user.sub,
           },
         ])
-        .select(); //Esto devuelve el registro insertado
+        .select(); // Esto devuelve el registro insertado
 
       if (error) throw error;
       console.log("Vista registrada correctamente :", data); // Debería mostrar el registro
@@ -104,11 +117,118 @@ const Index = () => {
     }
   };
 
+  const fetchFavoritos = async () => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("favoritos")
+        .select("id_platillo")
+        .eq("id_user", user.sub); // Filtrar por el UUID del usuario
+
+      if (error) {
+        console.error("Error al obtener favoritos:", error);
+        return;
+      }
+
+      console.log("Favoritos obtenidos:", data);
+      const favoritos = data.map((fav) => fav.id_platillo); // Extraer solo los IDs de los platillos
+      setFavoritosIds(favoritos); // Guardar los IDs en el estado
+    } catch (error) {
+      console.error("Error al obtener favoritos:", error);
+    }
+  };
+
+  const toggleFavorito = async (id_platillo) => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return;
+    }
+
+    console.log("ID del platillo recibido:", id_platillo); // Depuración
+
+    if (!id_platillo) {
+      console.error("El ID del platillo es inválido.");
+      Alert.alert("Error", "El ID del platillo no es válido.");
+      return;
+    }
+
+    const isFavorito = favoritosIds.includes(id_platillo);
+
+    if (isFavorito) {
+      // Eliminar de favoritos
+      try {
+        const { error } = await supabase
+          .from("favoritos")
+          .delete()
+          .eq("id_platillo", id_platillo)
+          .eq("id_user", user.sub);
+
+        if (error) {
+          console.error("Error al eliminar de favoritos:", error);
+          Alert.alert("Error", "No se pudo eliminar el platillo de favoritos.");
+          return;
+        }
+
+        // Actualizar el estado
+        setFavoritosIds((prev) => prev.filter((id) => id !== id_platillo));
+        setMealsRand((prevMeals) =>
+          prevMeals.map((meal) =>
+            meal.id === id_platillo
+              ? { ...meal, isFavorito: false } // Actualizar `isFavorito` a false
+              : meal
+          )
+        );
+        console.log(`Platillo ${id_platillo} eliminado de favoritos.`);
+      } catch (error) {
+        console.error("Error al eliminar de favoritos:", error);
+      }
+    } else {
+      // Agregar a favoritos
+      try {
+        const { error } = await supabase.from("favoritos").insert({
+          id_platillo,
+          id_user: user.sub,
+        });
+
+        if (error) {
+          console.error("Error al agregar a favoritos:", error);
+          Alert.alert("Error", "No se pudo agregar el platillo a favoritos.");
+          return;
+        }
+
+        // Actualizar el estado
+        setFavoritosIds((prev) => [...prev, id_platillo]);
+        setMealsRand((prevMeals) =>
+          prevMeals.map((meal) =>
+            meal.id === id_platillo
+              ? { ...meal, isFavorito: true } // Actualizar `isFavorito` a true
+              : meal
+          )
+        );
+        console.log(`Platillo ${id_platillo} agregado a favoritos.`);
+      } catch (error) {
+        console.error("Error al agregar a favoritos:", error);
+      }
+    }
+    console.log("Estado actualizado de mealsRand:", mealsRand);
+  };
+
   useEffect(() => {
-    getPopularMeals();
-    getAdvice();
-    getLastMeals(user.sub);
-  }, []);
+    const fetchData = async () => {
+      await fetchFavoritos(); // Obtener los favoritos primero
+      await getPopularMeals(); // Luego cargar los platillos populares
+      getAdvice();
+      getLastMeals(user.sub);
+    };
+
+    if (user && user.sub) {
+      fetchData();
+    }
+  }, [user]);
 
   return (
     <View style={styles.container}>
@@ -121,7 +241,6 @@ const Index = () => {
             justifyContent: "space-between",
           }}
         >
-          {/* <View style={{ backgroundColor: "red" }}> */}
           <View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <HelloWave />
@@ -221,6 +340,20 @@ const Index = () => {
                         start={{ x: 0.5, y: 1.1 }}
                         end={{ x: 0.5, y: 0 }}
                       />
+                      {/* Botón de favorito */}
+                      <Pressable
+                        style={styles.favButton}
+                        onPress={() => {
+                          console.log("Objeto item:", item); // Depuración
+                          toggleFavorito(item.id); // Asegúrate de que `id_platillo` sea la propiedad correcta
+                        }}
+                      >
+                        <Ionicons
+                          name="heart"
+                          size={24}
+                          color={item.isFavorito ? Colors.rojo : Colors.beige} // Cambiar el color según el estado de favorito
+                        />
+                      </Pressable>
                       <View style={styles.txtItemCont}>
                         <Text style={styles.txtItem}>
                           {item.nombre_platillo}
@@ -415,5 +548,14 @@ const styles = StyleSheet.create({
     color: Colors.beige,
     fontSize: 30,
     fontWeight: "bold",
+  },
+  favButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.verdeGasolina, // Color de fondo del botón
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
 });
