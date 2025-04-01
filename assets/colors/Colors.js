@@ -6,6 +6,6 @@ const Colors = {
   beigeOscuro: "#EEDBBE",
   beigeMasOscuro: "#D9AE6D",
   grisOscuro: "#4C5454",
-  rojo: "#C94A4A",
+  rojo: "#ff0000",
 };
 export default Colors;
