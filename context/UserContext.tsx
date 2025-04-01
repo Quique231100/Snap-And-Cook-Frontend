@@ -1,105 +1,84 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type User = {
-  nombre: string;
-  apellidos: string;
-  email: string;
-  sexo: string;
-  edad: number;
-  estatura: number;
-  peso: number;
-};
+const UserContext = createContext(null);
 
-type UserContextType = {
-  user: User | null;
-  isAuthenticated: boolean;
-  updateUser: (newData: Partial<User>) => void;
-  logout: () => Promise<void>;
-  login: (userData: User) => Promise<void>;
-  loadingAuth: boolean;
-};
-
-const UserContext = createContext<UserContextType>({} as UserContextType);
-
-export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const UserProvider = ({ children }) => {
+  const [user, setUser] = useState({ 
+    nombre: "",
+    apellidos: "",
+    email: "",
+    sexo: "",
+    edad: null,
+    estatura: null,
+    peso: null
+  });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // Verificar autenticación al iniciar
+  // Cargar datos al iniciar
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadUser = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('userData');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const savedUser = await AsyncStorage.getItem('userData');
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Error al verificar autenticación:', error);
+        console.error("Error loading user data:", error);
       } finally {
         setLoadingAuth(false);
       }
     };
-
-    checkAuth();
+    loadUser();
   }, []);
 
-  const login = async (userData: User) => {
-    try {
-      setLoadingAuth(true);
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      setUser(userData);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      throw error;
-    } finally {
-      setLoadingAuth(false);
-    }
-  };
-
-  const updateUser = async (newData: Partial<User>) => {
-    if (!user) return;
-    
-    const updatedUser = { ...user, ...newData };
-    try {
-      await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-    } catch (error) {
-      console.error('Error al actualizar usuario:', error);
-      throw error;
-    }
+  const login = async (userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+    await AsyncStorage.setItem('userData', JSON.stringify(userData));
   };
 
   const logout = async () => {
+    setUser({ nombre: "", apellidos: "", email: "", sexo: "", edad: null, estatura: null, peso: null });
+    setIsAuthenticated(false);
+    await AsyncStorage.removeItem('userData');
+  };
+
+  const updateUser = async (updatedData) => {
     try {
-      setLoadingAuth(true);
-      await AsyncStorage.removeItem('userData');
-      setUser(null);
-      setIsAuthenticated(false);
+      const updatedUser = { ...user, ...updatedData };
+      setUser(updatedUser);
+      await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+      return updatedUser;
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error("Error updating user:", error);
       throw error;
-    } finally {
-      setLoadingAuth(false);
     }
   };
 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      updateUser, 
-      logout, 
-      login,
-      loadingAuth
-    }}>
+    <UserContext.Provider 
+      value={{ 
+        user, 
+        setUser, 
+        isAuthenticated, 
+        loadingAuth,
+        login,
+        logout,
+        updateUser
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
 };
 
-export const useUser = () => useContext(UserContext);
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("useUser debe usarse dentro de UserProvider");
+  }
+  return context;
+};

@@ -11,7 +11,6 @@ import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
-import axios from "axios";
 import { useUser } from "../context/UserContext.tsx";
 import { supabase } from "../lib/supabase.ts";
 

@@ -14,20 +14,23 @@ import {
 import Colors from "../../../assets/colors/Colors";
 import { useUser } from "../../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
+import {useRouter} from "expo-router";
 import { CommonActions } from "@react-navigation/native";
 
 const User = () => {
   const { user, isAuthenticated, updateUser, logout, loadingAuth } = useUser();
   const navigation = useNavigation();
+  const router = useRouter();
   
+  // Estado inicial protegido
   const [userData, setUserData] = useState({
-    nombre: "",
-    apellidos: "",
-    correo: "",
-    sexo: "",
-    edad: "",
-    estatura: "",
-    peso: "",
+    nombre: user?.nombre || "",
+    apellidos: user?.apellidos || "",
+    correo: user?.email || "",
+    sexo: user?.sexo || "",
+    edad: user?.edad ? String(user.edad) : "",
+    estatura: user?.estatura ? String(user.estatura) : "",
+    peso: user?.peso ? String(user.peso) : "",
   });
 
   const [editando, setEditando] = useState(false);
@@ -51,17 +54,6 @@ const User = () => {
       });
     }
   }, [user]);
-
-  useEffect(() => {
-    if (!isAuthenticated && !loadingAuth) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        })
-      );
-    }
-  }, [isAuthenticated, loadingAuth, navigation]);
 
   const validarCampos = () => {
     const nuevosErrores = {
@@ -116,7 +108,9 @@ const User = () => {
           setErrores({ ...errores, [field]: "" });
         }
       }
-    } 
+    } else {
+      setUserData({ ...userData, [field]: value });
+    }
   };
 
   const guardarCambios = async () => {
@@ -151,6 +145,7 @@ const User = () => {
     try {
       setLoading(true);
       await logout();
+      router.push("/");
     } catch (error) {
       Alert.alert("Error", "No se pudo cerrar sesión");
       console.error(error);
@@ -198,20 +193,18 @@ const User = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Nombre</Text>
           <TextInput 
-            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            style={[styles.input, styles.disabledInput]} 
             value={userData.nombre}
-            onChangeText={(text) => handleChange("nombre", text)} 
-            editable={editando}
+            editable={false}
           />
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Apellidos</Text>
           <TextInput 
-            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            style={[styles.input, styles.disabledInput]} 
             value={userData.apellidos}
-            onChangeText={(text) => handleChange("apellidos", text)} 
-            editable={editando}
+            editable={false}
           />
         </View>
 
@@ -227,10 +220,9 @@ const User = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Sexo</Text>
           <TextInput 
-            style={[styles.input, editando ? styles.editableInput : styles.disabledInput]} 
+            style={[styles.input, styles.disabledInput]} 
             value={userData.sexo}
-            onChangeText={(text) => handleChange("sexo", text)} 
-            editable={editando}
+            editable={false}
           />
         </View>
 
@@ -393,16 +385,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   editButton: {
-    backgroundColor: "#1E3A8A", // Azul oscuro
+    backgroundColor: "#4CAF50", // Verde
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#2196F3", // Azul
   },
   cancelButton: {
-    backgroundColor: "#f44336",
+    backgroundColor: "#f44336", // Rojo
   },
   logoutButton: {
-    backgroundColor: "#d32f2f",
+    backgroundColor: "#FF9800", // Naranja
   },
   buttonText: {
     color: "white",
