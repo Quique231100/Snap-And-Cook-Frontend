@@ -11,7 +11,6 @@ import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
-import axios from "axios";
 import { useUser } from "../context/UserContext.tsx";
 import { supabase } from "../lib/supabase.ts";
 
@@ -37,7 +36,10 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    if (error) Alert.alert("Error al iniciar sesión", error);
+    if (error) {
+      Alert.alert("Error al iniciar sesión", error);
+      console.log(error);
+    }
     setUser(data.user.user_metadata);
     router.push("/loged");
   };
@@ -88,7 +90,7 @@ const Login = () => {
         </Pressable>
       </Link>
 
-      <Pressable onPress={() => handleLogin()}>
+      <Pressable onPress={handleLogin}>
         <View style={styles.loginButton}>
           <Text style={styles.subtitle}>Entrar</Text>
         </View>
