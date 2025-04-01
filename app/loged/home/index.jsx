@@ -58,7 +58,7 @@ const Index = () => {
     }
   };
 
-  const getPopularMeals = async () => {
+  const getPopularMeals = async (favoritosIds) => {
     const { data, error } = await supabase.rpc(
       "obtener_platillos_por_popularidad",
       {
@@ -120,25 +120,28 @@ const Index = () => {
   const fetchFavoritos = async () => {
     if (!user || !user.sub) {
       console.error("El usuario no está autenticado.");
-      return;
+      return [];
     }
 
     try {
       const { data, error } = await supabase
         .from("favoritos")
         .select("id_platillo")
-        .eq("id_user", user.sub); // Filtrar por el UUID del usuario
+        .eq("id_user", user.sub);
 
       if (error) {
         console.error("Error al obtener favoritos:", error);
-        return;
+        return [];
       }
 
-      console.log("Favoritos obtenidos:", data);
-      const favoritos = data.map((fav) => fav.id_platillo); // Extraer solo los IDs de los platillos
-      setFavoritosIds(favoritos); // Guardar los IDs en el estado
+      console.log("Favoritos obtenidos desde la base de datos:", data);
+      const favoritos = data.map((fav) => fav.id_platillo);
+      setFavoritosIds(favoritos); // Actualizar el estado
+      console.log("Estado actualizado de favoritosIds:", favoritos);
+      return favoritos; // Devolver los favoritos
     } catch (error) {
       console.error("Error al obtener favoritos:", error);
+      return [];
     }
   };
 
@@ -219,16 +222,23 @@ const Index = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      await fetchFavoritos(); // Obtener los favoritos primero
-      await getPopularMeals(); // Luego cargar los platillos populares
-      getAdvice();
-      getLastMeals(user.sub);
+      try {
+        const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
+        console.log("Favoritos cargados:", favoritos);
+        await getPopularMeals(favoritos); // Pasar los favoritos a `getPopularMeals`
+        getAdvice();
+        getLastMeals(user.sub);
+      } catch (error) {
+        console.error("Error al cargar los datos iniciales:", error);
+      }
     };
 
     if (user && user.sub) {
       fetchData();
     }
   }, [user]);
+
+  console.log("Estado inicial de mealsRand:", mealsRand);
 
   return (
     <View style={styles.container}>
