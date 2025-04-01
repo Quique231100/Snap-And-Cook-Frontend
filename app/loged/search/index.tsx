@@ -4,126 +4,186 @@ import {
   View,
   TextInput,
   Pressable,
-  Button,
   FlatList,
-  Image,
   ImageBackground,
   Dimensions,
   Alert,
+  ActivityIndicator,
+  Animated,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import Colors from "../../../assets/colors/Colors";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "../../../context/UserContext"; // Importar el contexto del usuario
+import { useFocusEffect } from "@react-navigation/native"; // Importar useFocusEffect
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
 const Search = () => {
+  const { user } = useUser(); // Obtener el usuario desde el contexto
   const [busqueda, setBusqueda] = useState("");
   const [meals, setMeals] = useState([]);
-  const [favoritos, setFavoritos] = useState([]); // Estado para almacenar los IDs de favoritos
-
+  const [favoritos, setFavoritos] = useState([]); // Guardar los IDs de los favoritos
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null); // Guardar el id INT8 del usuario
+  const [scaleValue] = useState(new Animated.Value(1)); // Animación del botón
   const router = useRouter();
 
-  const filterData = meals.filter((dish) =>
-    dish.nombre_platillo.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // Obtener el ID del usuario desde la tabla "usuarios"
+  const fetchUserId = async () => {
+    if (!user?.id) {
+      console.error("El usuario no está definido.");
+      Alert.alert("Error", "No se pudo obtener el ID del usuario.");
+      return null;
+    }
 
-  //Hook para renderizar los datos cuando se accede a esta ventana
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("id")
+      .eq("id_user", user.id) // Usar el UUID del usuario desde el contexto
+      .single();
 
-  const fetchData = async () => {
+    if (error) {
+      console.error("Error al obtener el ID del usuario:", error);
+      Alert.alert("Error", "No se pudo obtener el ID del usuario.");
+      return null;
+    }
+
+    return data.id;
+  };
+
+  // Obtener los IDs de los favoritos del usuario
+  const fetchFavoritos = async (userId) => {
+    const { data, error } = await supabase
+      .from("favoritos")
+      .select("id_platillo")
+      .eq("id_usuario", userId);
+
+    if (error) {
+      console.error("Error al obtener favoritos:", error);
+      Alert.alert("Error", "No se pudieron cargar los favoritos.");
+      return [];
+    }
+
+    return data.map((fav) => fav.id_platillo); // Retornar solo los IDs de los platillos favoritos
+  };
+
+  // Obtener todos los platillos
+  const fetchPlatillos = async () => {
+    setLoading(true);
     const { data, error } = await supabase.rpc("obtener_platillos");
 
     if (error) {
       console.error("Error al obtener platillos:", error);
-    } else {
-      setMeals(data);
+      Alert.alert("Error", "No se pudieron cargar los platillos.");
+      setLoading(false);
+      return [];
     }
+
+    setLoading(false);
+    return data;
   };
 
-  const fetchFavoritos = async () => {
-    const { data, error } = await supabase
-      .from("favoritos")
-      .select("id_platillo");
-
-    if (error) {
-      console.error("Error al obtener favoritos:", error);
-    } else {
-      setFavoritos(data.map((fav) => fav.id_platillo));
-    }
-  };
-
-  useEffect(() => {
-    const fetchAllData = async () => {
-      await Promise.all([fetchData(), fetchFavoritos()]);
-    };
-
-    fetchAllData();
-  }, []);
-
-  const toggleFavorito = async (id, isFavorito) => {
-    console.log("toggleFavorito llamado con:", {
-      id_usuario: user?.id,
-      id_platillo: id,
-      isFavorito,
-    });
-
-    if (!user?.id) {
+  // Agregar un platillo a favoritos
+  const addToFavoritos = async (idPlatillo) => {
+    if (!userId) {
       console.error("El ID del usuario no está definido.");
-      Alert.alert("Error", "No se pudo obtener el ID del usuario.");
+      Alert.alert("Error", "No se pudo agregar a favoritos.");
       return;
     }
 
-    if (isFavorito) {
-      console.log("Eliminando de favoritos:", {
-        id_usuario: user.id,
-        id_platillo: id,
-      });
-      const { error } = await supabase.rpc("eliminar_de_favoritos", {
-        id_usuario: user.id,
-        id_platillo: id,
-      });
+    const { error } = await supabase
+      .from("favoritos")
+      .insert({ id_usuario: userId, id_platillo: idPlatillo });
 
-      if (error) {
-        console.error("Error al eliminar de favoritos:", error);
-        Alert.alert("Error", "No se pudo eliminar de favoritos.");
-      } else {
-        console.log(`Platillo eliminado de favoritos: ${id}`);
-        setFavoritos((prev) => {
-          const updatedFavoritos = prev.filter((favId) => favId !== id);
-          console.log("Estado actualizado de favoritos:", updatedFavoritos);
-          return updatedFavoritos;
-        });
-        Alert.alert("Éxito", "Platillo eliminado de favoritos.");
-      }
+    if (error) {
+      console.error("Error al agregar a favoritos:", error);
+      Alert.alert("Error", "No se pudo agregar a favoritos.");
     } else {
-      console.log("Agregando a favoritos:", {
-        id_usuario: user.id,
-        id_platillo: id,
-      });
-      const { error } = await supabase.rpc("agregar_a_favoritos", {
-        id_usuario: user.id,
-        id_platillo: id,
-      });
-
-      if (error) {
-        console.error("Error al agregar a favoritos:", error);
-        Alert.alert("Error", "No se pudo agregar a favoritos.");
-      } else {
-        console.log(`Platillo agregado a favoritos: ${id}`);
-        setFavoritos((prev) => {
-          const updatedFavoritos = [...prev, id];
-          console.log("Estado actualizado de favoritos:", updatedFavoritos);
-          return updatedFavoritos;
-        });
-        Alert.alert("Éxito", "Platillo agregado a favoritos.");
-      }
+      setFavoritos((prev) => [...prev, idPlatillo]); // Actualizar el estado local
     }
   };
+
+  // Eliminar un platillo de favoritos
+  const removeFromFavoritos = async (idPlatillo) => {
+    if (!userId) {
+      console.error("El ID del usuario no está definido.");
+      Alert.alert("Error", "No se pudo eliminar de favoritos.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("favoritos")
+      .delete()
+      .eq("id_usuario", userId)
+      .eq("id_platillo", idPlatillo);
+
+    if (error) {
+      console.error("Error al eliminar de favoritos:", error);
+      Alert.alert("Error", "No se pudo eliminar de favoritos.");
+    } else {
+      setFavoritos((prev) => prev.filter((favId) => favId !== idPlatillo)); // Actualizar el estado local
+    }
+  };
+
+  // Cargar los datos de los platillos y los favoritos al iniciar
+  const fetchData = async () => {
+    const id = await fetchUserId(); // Obtener el ID INT8 del usuario
+    if (id) {
+      setUserId(id); // Guardar el ID del usuario en el estado
+      const favoritosIds = await fetchFavoritos(id); // Obtener los favoritos del usuario
+      setFavoritos(favoritosIds); // Guardar los IDs de los favoritos
+    }
+
+    const platillosData = await fetchPlatillos();
+    setMeals(platillosData);
+  };
+
+  // Manejar la animación del botón de favorito
+  const handleFavoritePress = (idPlatillo, isFavorito) => {
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      if (isFavorito) {
+        removeFromFavoritos(idPlatillo);
+      } else {
+        addToFavoritos(idPlatillo);
+      }
+    });
+  };
+
+  // Recargar la lista al enfocar la ventana
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.verdeGasolina} />
+      </View>
+    );
+  }
+
+  // Filtrar los platillos según la búsqueda
+  const filterData = meals.filter((dish) =>
+    dish.nombre_platillo.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
@@ -148,40 +208,26 @@ const Search = () => {
       </View>
 
       <View style={styles.listCont}>
-        {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
         <FlatList
           data={filterData}
-          keyExtractor={(item, id) => id.toString()}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
-            const isFavorito = favoritos.includes(item.id);
+            const isFavorito = favoritos.includes(item.id); // Verificar si el platillo es favorito
             return (
               <Pressable
-                onPress={() => {
-                  if (!item.id) {
-                    Alert.alert("Error", "El ID del platillo no es válido.");
-                    console.log("ID inválido:", item); // Depuración
-                    return;
-                  }
-
+                onPress={() =>
                   router.push({
                     pathname: "/loged/search/recipe",
                     params: {
-                      id: item.id, // Asegúrate de que `item.id` sea el ID del platillo
+                      id: item.id,
                       nombre: item.nombre_platillo,
                       img: item.imagen_platillo,
                       ingredientes: item.ingredientes,
                       instrucciones: item.instrucciones_platillo,
+                      userId, // Pasar el userId como parámetro
                     },
-                  });
-                }}
-                onStartShouldSetResponder={(event) => {
-                  // Evitar que el evento se propague si se presiona el botón de favorito
-                  const target = event.target;
-                  if (target?.parentNode?.className?.includes("favButton")) {
-                    return false;
-                  }
-                  return true;
-                }}
+                  })
+                }
               >
                 <View style={styles.itemCont}>
                   <ImageBackground
@@ -196,27 +242,18 @@ const Search = () => {
                     />
                     {/* Botón de favorito */}
                     <Pressable
-                      onPress={() => {
-                        console.log(
-                          "Botón de favorito presionado con valores:",
-                          { id: item.id, isFavorito }
-                        );
-                        console.log("Estado de favoritos:", favoritos);
-                        console.log(
-                          "ID del platillo:",
-                          item.id,
-                          "¿Es favorito?",
-                          isFavorito
-                        );
-                        toggleFavorito(item.id, isFavorito);
-                      }}
                       style={styles.favButton}
+                      onPress={() => handleFavoritePress(item.id, isFavorito)}
                     >
-                      <Ionicons
-                        name="heart"
-                        size={24}
-                        color={isFavorito ? Colors.rojo : Colors.beige}
-                      />
+                      <Animated.View
+                        style={{ transform: [{ scale: scaleValue }] }}
+                      >
+                        <Ionicons
+                          name="heart"
+                          size={24}
+                          color={isFavorito ? Colors.rojo : Colors.beige} // Cambiar color si es favorito
+                        />
+                      </Animated.View>
                     </Pressable>
                     <View style={styles.txtItemCont}>
                       <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
@@ -242,7 +279,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
-    // justifyContent: "center",
     alignItems: "center",
   },
   headerCont: {
@@ -316,9 +352,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: Colors.verdeGasolina, // Fondo blanco semitransparente
+    backgroundColor: Colors.verdeGasolina,
     padding: 8,
     borderRadius: 20,
-    zIndex: 10, // Asegúrate de que esté por encima de otros elementos
+    zIndex: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.beige,
   },
 });
