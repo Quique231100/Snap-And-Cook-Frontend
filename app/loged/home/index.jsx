@@ -21,26 +21,6 @@ import { supabase } from "../../../lib/supabase";
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
-const datos = {
-  advice: [
-    {
-      id: 1,
-      text: "Que las verduras nunca falten en tu plato",
-      img: "https://hips.hearstapps.com/hmg-prod/images/frutas-1552246920.jpg?crop=0.669xw:1.00xh;0.166xw,0&resize=1200:*",
-    },
-    {
-      id: 2,
-      text: "Mantente siempre hidratado tomando 3 litros de agua al día",
-      img: "https://www.prosaudesl.com/la-importancia-de-la-hidratacion-como-el-agua-impacta-en-tu-salud_img234714t1.jpg",
-    },
-    {
-      id: 3,
-      text: "No olvides hacer ejercicio al menos 30 minutos al dia",
-      img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
-    },
-  ],
-};
-
 const Index = () => {
   const { user } = useUser();
   const [paginationIndex, setPaginationIndex] = useState(0);
