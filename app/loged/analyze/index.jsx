@@ -18,31 +18,14 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { supabase } from "../../../lib/supabase.ts";
+import { useUser } from "../../../context/UserContext.tsx";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
-// const datos = {
-//   advice: [
-//     {
-//       id: 1,
-//       text: "Que las verduras nunca falten en tu plato",
-//       img: "https://hips.hearstapps.com/hmg-prod/images/frutas-1552246920.jpg?crop=0.669xw:1.00xh;0.166xw,0&resize=1200:*",
-//     },
-//     {
-//       id: 2,
-//       text: "Mantente siempre hidratado tomando 3 litros de agua al día",
-//       img: "https://www.prosaudesl.com/la-importancia-de-la-hidratacion-como-el-agua-impacta-en-tu-salud_img234714t1.jpg",
-//     },
-//     {
-//       id: 3,
-//       text: "No olvides hacer ejercicio al menos 30 minutos al dia",
-//       img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
-//     },
-//   ],
-// };
-
 export default function indexAnalyze() {
+  const { user } = useUser();
   const [image, setImage] = useState(null);
   const [image64, setImage64] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -106,8 +89,6 @@ export default function indexAnalyze() {
 
     try {
       setLoading(true);
-      console.log("Enviando imagen a API...");
-
       const response = await axios({
         method: "POST",
         url: "https://detect.roboflow.com/comida-lz8pz/4",
@@ -121,11 +102,20 @@ export default function indexAnalyze() {
       });
       const detectedFood = [
         ...new Set(
-          response.data.predictions.map((prediction) => prediction.class)
+          response.data.predictions.map(
+            (prediction) =>
+              prediction.class.charAt(0).toUpperCase() +
+              prediction.class.slice(1).toLowerCase()
+          )
         ),
       ];
-      setIngredients(detectedFood);
-      console.log("ingredientes detectados: ", detectedFood);
+      if (detectedFood.length === 0) {
+        Alert.alert("Error", "No se encontraron ingredientes en la imagen");
+      } else {
+        setIngredients(detectedFood);
+        fetchRecipes(detectedFood);
+        Alert.alert("Éxito", "Alimentos detectados. Revisa la lista.");
+      }
     } catch (error) {
       console.error(
         "Error en análisis de imagen:",
@@ -142,21 +132,46 @@ export default function indexAnalyze() {
     }
   };
 
-  // const fetchRecipes = async (ingredients) => {
-  //   try {
-  //     const response = await axios.post(`${baseUrl}/platillos/by-ingredients`, {
-  //       ingredientes: ingredients,
-  //     });
-  //     if (response.data && response.data.length > 0) {
-  //       setRecipes(response.data);
-  //     } else {
-  //       console.log("No se encontraron recetas");
-  //       setRecipes([]);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error al obtener recetas:", error);
-  //   }
-  // };
+  const fetchRecipes = async (detectedIngredients) => {
+    try {
+      const { data, error } = await supabase.rpc(
+        "obtener_platillos_por_ingredientes",
+        {
+          ingredientes_input: detectedIngredients,
+        }
+      );
+
+      if (error) throw error;
+      console.log("Recetas obtenidas:", data);
+      setRecipes(data);
+    } catch (err) {
+      console.error("Error al obtener recetas:", err);
+      setRecipes([]);
+    }
+  };
+
+  const registerRecipeViews = async (recipeId) => {
+    if (!user || !user.sub) return;
+    console.log("Enviando receta con id: ", recipeId);
+    try {
+      const { data, error } = await supabase
+        .from("platillos_vistas")
+        .insert([
+          {
+            id_platillo: parseInt(recipeId, 10),
+            id_user: user.sub,
+          },
+        ])
+        .select(); //Esto devuelve el registro insertado
+
+      if (error) throw error;
+      console.log("Vista registrada correctamente men try:", data); // Debería mostrar el registro
+      return data;
+    } catch (error) {
+      console.error("Error registrando vista de receta en catch:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (image) {
@@ -211,12 +226,14 @@ export default function indexAnalyze() {
             <Text style={styles.txtRecetas}>Recetas recomendadas</Text>
             <View style={styles.listCont}>
               {/* Cambiar los datos de la flatlist cuando se acabe de arreglar el front */}
-              {/* <FlatList
-                data={datos.advice}
+              <FlatList
+                data={recipes}
                 keyExtractor={(item, id) => id.toString()}
                 renderItem={({ item }) => (
                   <Pressable
-                    onPress={() =>
+                    onPress={() => {
+                      console.log("ID de la receta: ", item.id);
+                      registerRecipeViews(item.id);
                       router.push({
                         pathname: "/loged/analyze/recipe",
                         params: {
@@ -225,12 +242,12 @@ export default function indexAnalyze() {
                           ingredientes: item.ingredientes,
                           instrucciones: item.instrucciones_platillo,
                         },
-                      })
-                    }
+                      });
+                    }}
                   >
                     <View style={styles.itemCont}>
                       <ImageBackground
-                        source={{ uri: item.img }}
+                        source={{ uri: item.imagen_platillo }}
                         style={styles.imgItemCont}
                       >
                         <LinearGradient
@@ -241,18 +258,20 @@ export default function indexAnalyze() {
                           end={{ x: 0.5, y: 0 }}
                         />
                         <View style={styles.txtItemCont}>
-                          <Text style={styles.txtItem}>{item.text}</Text>
+                          <Text style={styles.txtItem}>
+                            {item.nombre_platillo}
+                          </Text>
                         </View>
                       </ImageBackground>
                     </View>
                   </Pressable>
                 )}
-                hor
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
                 ItemSeparatorComponent={() => (
                   <View style={{ marginVertical: screenHeight * 0.015 }} />
                 )}
-              /> */}
+              />
             </View>
           </View>
         )}
@@ -268,17 +287,25 @@ export default function indexAnalyze() {
             activeOpacity={1}
             onPress={() => setModalVisible(false)}
           >
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Ingredientes</Text>
-              <FlatList
-                data={ingredients}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                  <Text style={styles.modalItem}>• {item}</Text>
-                )}
-                scrollEnabled={false}
-              />
-            </View>
+            {ingredients.length === 0 ? (
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>
+                  No se encontraron ingredientes en la imagen
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Ingredientes</Text>
+                <FlatList
+                  data={ingredients}
+                  keyExtractor={(item, index) => index.toString()}
+                  renderItem={({ item }) => (
+                    <Text style={styles.modalItem}>• {item}</Text>
+                  )}
+                  scrollEnabled={false}
+                />
+              </View>
+            )}
           </TouchableOpacity>
         </Modal>
       </ScrollView>
@@ -387,7 +414,6 @@ const styles = StyleSheet.create({
   },
   listCont: {
     width: screenWidth * 0.9,
-    marginBottom: screenHeight * 0.23,
   },
   itemCont: {
     backgroundColor: Colors.verdeGasolina,

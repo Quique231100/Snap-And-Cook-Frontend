@@ -21,13 +21,32 @@ import { supabase } from "../../../lib/supabase";
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
 
+const datos = {
+  advice: [
+    {
+      id: 1,
+      text: "Que las verduras nunca falten en tu plato",
+      img: "https://hips.hearstapps.com/hmg-prod/images/frutas-1552246920.jpg?crop=0.669xw:1.00xh;0.166xw,0&resize=1200:*",
+    },
+    {
+      id: 2,
+      text: "Mantente siempre hidratado tomando 3 litros de agua al día",
+      img: "https://www.prosaudesl.com/la-importancia-de-la-hidratacion-como-el-agua-impacta-en-tu-salud_img234714t1.jpg",
+    },
+    {
+      id: 3,
+      text: "No olvides hacer ejercicio al menos 30 minutos al dia",
+      img: "https://enlinea.santotomas.cl/web/wp-content/uploads/sites/2/2017/03/ejercicio-salud-tuillang-yuing.ust-vina-del-mar.jpg",
+    },
+  ],
+};
+
 const Index = () => {
   const { user } = useUser();
   const [paginationIndex, setPaginationIndex] = useState(0);
   const [advice, setAdvice] = useState([]);
   const [mealsRand, setMealsRand] = useState([]);
   const [lastMeals, setLastMeals] = useState([]);
-  const [favoritosIds, setFavoritosIds] = useState([]); // IDs de los favoritos
   const router = useRouter();
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -44,7 +63,6 @@ const Index = () => {
     { viewabilityConfig, onViewableItemsChanged },
   ]);
 
-  // Obtener recomendaciones de salud
   const getAdvice = async () => {
     const { data, error } = await supabase.rpc("obtener_recomendaciones_salud");
     if (error) {
@@ -58,7 +76,6 @@ const Index = () => {
     }
   };
 
-  // Obtener platillos populares
   const getPopularMeals = async () => {
     const { data, error } = await supabase.rpc(
       "obtener_platillos_por_popularidad",
@@ -72,7 +89,6 @@ const Index = () => {
     setMealsRand(data);
   };
 
-  // Obtener historial de recetas vistas
   const getLastMeals = async (usuarioId) => {
     const { data, error } = await supabase.rpc("get_ultimos_vistos", {
       user_uuid: usuarioId,
@@ -85,7 +101,6 @@ const Index = () => {
     setLastMeals(data);
   };
 
-  // Registrar vistas de recetas
   const registerRecipeViews = async (recipeId) => {
     if (!user || !user.sub) return;
 
@@ -98,7 +113,7 @@ const Index = () => {
             id_user: user.sub,
           },
         ])
-        .select(); // Esto devuelve el registro insertado
+        .select(); //Esto devuelve el registro insertado
 
       if (error) throw error;
       console.log("Vista registrada correctamente :", data); // Debería mostrar el registro
@@ -106,65 +121,6 @@ const Index = () => {
     } catch (error) {
       console.error("Error registrando vista de receta:", error);
       return null;
-    }
-  };
-
-  // Alternar favoritos (agregar o eliminar)
-  const toggleFavorito = async (id_platillo) => {
-    const idPlatilloNumerico = Number(id_platillo); // Convertir a número
-    console.log("ID del platillo (convertido a número):", idPlatilloNumerico);
-
-    const userId = user.sub; // Usar el UUID del usuario
-    if (!userId) {
-      console.error("El ID del usuario no está definido.");
-      return;
-    }
-
-    const isFavorito = favoritosIds.includes(idPlatilloNumerico);
-
-    if (isFavorito) {
-      // Eliminar de favoritos
-      const { error } = await supabase
-        .from("favoritos")
-        .delete()
-        .eq("id_usuario", userId)
-        .eq("id_platillo", idPlatilloNumerico);
-
-      if (error) {
-        console.error("Error al eliminar de favoritos:", error);
-        Alert.alert("Error", "No se pudo eliminar el platillo de favoritos.");
-      } else {
-        setFavoritosIds((prev) =>
-          prev.filter((id) => id !== idPlatilloNumerico)
-        );
-        setMealsRand((prevMeals) =>
-          prevMeals.map((meal) =>
-            meal.id_platillo === id_platillo
-              ? { ...meal, isFavorito: false }
-              : meal
-          )
-        );
-      }
-    } else {
-      // Agregar a favoritos
-      const { error } = await supabase.from("favoritos").insert({
-        id_usuario: userId,
-        id_platillo: idPlatilloNumerico, // Usar el valor numérico
-      });
-
-      if (error) {
-        console.error("Error al agregar a favoritos:", error);
-        Alert.alert("Error", "No se pudo agregar el platillo a favoritos.");
-      } else {
-        setFavoritosIds((prev) => [...prev, idPlatilloNumerico]);
-        setMealsRand((prevMeals) =>
-          prevMeals.map((meal) =>
-            meal.id_platillo === id_platillo
-              ? { ...meal, isFavorito: true }
-              : meal
-          )
-        );
-      }
     }
   };
 
@@ -185,6 +141,7 @@ const Index = () => {
             justifyContent: "space-between",
           }}
         >
+          {/* <View style={{ backgroundColor: "red" }}> */}
           <View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <HelloWave />
@@ -205,7 +162,6 @@ const Index = () => {
         </View>
       </View>
       <ScrollView>
-        {/* Renderizado de consejos */}
         <View style={styles.advicesCont}>
           <View style={styles.recuerdaCont}>
             <Text style={styles.subtitleTxt}>Recuerda 🤔</Text>
@@ -232,109 +188,122 @@ const Index = () => {
               viewabilityConfigCallbackPairs.current
             }
           />
-        </View>
 
-        {/* Renderizado de recetas populares */}
-        <View style={styles.recetasTxtCont}>
-          <Text style={styles.subtitleTxt}>🔥 Tendencia esta semana</Text>
-        </View>
-        <FlatList
-          data={mealsRand}
-          keyExtractor={(item, id) => id.toString()}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                registerRecipeViews(item.id);
-                router.push({
-                  pathname: "/loged/home/recipe",
-                  params: {
-                    nombre: item.nombre_platillo,
-                    img: item.imagen_platillo,
-                    ingredientes: item.ingredientes,
-                    instrucciones: item.instrucciones_platillo,
+          <View style={styles.dotCont}>
+            {advice.map((_, id) => (
+              <View
+                key={id}
+                style={[
+                  styles.flatlistDot,
+                  {
+                    backgroundColor:
+                      paginationIndex === id
+                        ? Colors.beigeMasOscuro
+                        : Colors.beigeOscuro,
                   },
-                });
-              }}
-            >
-              <View style={styles.itemRecipeCont}>
-                <ImageBackground
-                  source={{ uri: item.imagen_platillo }}
-                  style={styles.imgItemRecipeCont}
-                >
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0.8)", "transparent"]}
-                    style={styles.background}
-                    start={{ x: 0.5, y: 1.1 }}
-                    end={{ x: 0.5, y: 0 }}
-                  />
-                  <Pressable
-                    onPress={() => toggleFavorito(item.id_platillo)}
-                    style={styles.favButton}
-                  >
-                    <Ionicons
-                      name="heart"
-                      size={24}
-                      color={
-                        favoritosIds.includes(item.id_platillo)
-                          ? Colors.rojo
-                          : Colors.beige
-                      }
-                    />
-                  </Pressable>
-                  <View style={styles.txtItemCont}>
-                    <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
-                  </View>
-                </ImageBackground>
-              </View>
-            </Pressable>
-          )}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        />
+                ]}
+              />
+            ))}
+          </View>
 
-        {/* Renderizado de últimas recetas vistas */}
-        <View style={styles.recetasTxtCont}>
-          <Text style={styles.subtitleTxt}>⏱️ Últimas recetas vistas</Text>
-        </View>
-        <FlatList
-          data={lastMeals}
-          keyExtractor={(item, id) => id.toString()}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                registerRecipeViews(item.id);
-                router.push({
-                  pathname: "/loged/home/recipe",
-                  params: {
-                    nombre: item.nombre_platillo,
-                    img: item.imagen_platillo,
-                    ingredientes: item.ingredientes,
-                    instrucciones: item.instrucciones_platillo,
-                  },
-                });
-              }}
-            >
-              <View style={styles.itemRecipeCont}>
-                <ImageBackground
-                  source={{ uri: item.imagen_platillo }}
-                  style={styles.imgItemRecipeCont}
+          <View style={styles.recetasTxtCont}>
+            <Text style={styles.subtitleTxt}>🔥 Tendencia esta semana</Text>
+          </View>
+
+          <View style={styles.recetasCont}>
+            <FlatList
+              data={mealsRand}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    console.log(item);
+                    registerRecipeViews(item.id);
+                    router.push({
+                      pathname: "/loged/home/recipe",
+                      params: {
+                        nombre: item.nombre_platillo,
+                        img: item.imagen_platillo,
+                        ingredientes: item.ingredientes,
+                        instrucciones: item.instrucciones_platillo,
+                      },
+                    });
+                  }}
                 >
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0.8)", "transparent"]}
-                    style={styles.background}
-                    start={{ x: 0.5, y: 1.1 }}
-                    end={{ x: 0.5, y: 0 }}
-                  />
-                  <View style={styles.txtItemCont}>
-                    <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
+                  <View style={styles.itemRecipeCont}>
+                    <ImageBackground
+                      source={{ uri: item.imagen_platillo }}
+                      style={styles.imgItemRecipeCont}
+                    >
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.8)", "transparent"]}
+                        style={styles.background}
+                        start={{ x: 0.5, y: 1.1 }}
+                        end={{ x: 0.5, y: 0 }}
+                      />
+                      <View style={styles.txtItemCont}>
+                        <Text style={styles.txtItem}>
+                          {item.nombre_platillo}
+                        </Text>
+                      </View>
+                    </ImageBackground>
                   </View>
-                </ImageBackground>
-              </View>
-            </Pressable>
-          )}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        />
+                </Pressable>
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+
+          <View style={styles.recetasTxtCont}>
+            <Text style={styles.subtitleTxt}>⏱️ Últimas recetas vistas</Text>
+          </View>
+
+          <View style={styles.recetasCont}>
+            <FlatList
+              data={lastMeals}
+              keyExtractor={(item, id) => id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    console.log(item);
+                    registerRecipeViews(item.id);
+                    router.push({
+                      pathname: "/loged/home/recipe",
+                      params: {
+                        nombre: item.nombre_platillo,
+                        img: item.imagen_platillo,
+                        ingredientes: item.ingredientes,
+                        instrucciones: item.instrucciones_platillo,
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.itemRecipeCont}>
+                    <ImageBackground
+                      source={{ uri: item.imagen_platillo }}
+                      style={styles.imgItemRecipeCont}
+                    >
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.8)", "transparent"]}
+                        style={styles.background}
+                        start={{ x: 0.5, y: 1.1 }}
+                        end={{ x: 0.5, y: 0 }}
+                      />
+                      <View style={styles.txtItemCont}>
+                        <Text style={styles.txtItem}>
+                          {item.nombre_platillo}
+                        </Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </Pressable>
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+        </View>
       </ScrollView>
     </View>
   );

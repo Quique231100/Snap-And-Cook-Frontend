@@ -38,19 +38,17 @@ const RecetaPage = () => {
       <View style={styles.recipeCont}>
         <View style={styles.ingredientesCont}>
           <Text style={styles.txtSubtitle}>Ingredientes</Text>
-
-          <Text style={styles.txtAPI}>
-            <FlatList
-              data={ingredientesArray}
-              keyExtractor={(item, id) => id.toString()}
-              renderItem={({ item }) => <Text>- {item}</Text>}
-            />
-          </Text>
+          <FlatList
+            data={ingredientesArray}
+            keyExtractor={(item, id) => id.toString()}
+            renderItem={({ item }) => (
+              <Text style={styles.txtAPI}>- {item}</Text>
+            )}
+          />
         </View>
         <View style={styles.instruccionesCont}>
           <Text style={styles.txtSubtitle}>Instrucciones</Text>
-          <Text>{instrucciones}</Text>
-          <Text style={styles.txtAPI}></Text>
+          <Text style={styles.txtAPI}>{instrucciones}</Text>
         </View>
       </View>
     </View>
