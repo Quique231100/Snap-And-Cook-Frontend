@@ -36,8 +36,25 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    if (error) Alert.alert("Error al iniciar sesión", error);
-    setUser(data.user.user_metadata);
+    if (error) {
+      Alert.alert("Error al iniciar sesión", error);
+      return;
+    }
+    console.log("Usuario logueado:", data.user.user_metadata);
+
+    // Refrescar el token del usuario para obtener los datos actualizados
+    const { data: sessionData, error: refreshError } =
+      await supabase.auth.refreshSession();
+    if (refreshError) {
+      Alert.alert(
+        "Error al refrescar el token del usuario",
+        refreshError.message
+      );
+      return;
+    }
+
+    // Actualizar el contexto del usuario con los datos actualizados
+    setUser(sessionData.user.user_metadata);
     router.push("/loged");
   };
 
