@@ -11,12 +11,12 @@ import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
-import { useUser } from "../context/UserContext.tsx";
+import axios from "axios";
+import { useUser } from "../context/UserContext"; // Importar el contexto
 import { supabase } from "../lib/supabase.ts";
 
 const Login = () => {
-  //Este es un ejemplo
-  const { setUser } = useUser();
+  const { setUser } = useUser(); // Obtener la función para actualizar el usuario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ const Login = () => {
 
   //Funcion para inicio de sesion
   const handleLogin = async () => {
-    //Validación campos vacíos
+    // Validación de campos vacíos
     if (!email.trim() || !password.trim()) {
       Alert.alert("Error", "Debe llenar los campos para continuar");
       return;
@@ -56,6 +56,36 @@ const Login = () => {
     // Actualizar el contexto del usuario con los datos actualizados
     setUser(sessionData.user.user_metadata);
     router.push("/loged");
+  };
+
+  const getRandomMeals = async () => {
+    try {
+      const id = await fetchUserId(); // Obtener el ID INT8 del usuario
+      if (!id) return;
+
+      const { data: meals, error } = await supabase.rpc("getrandommeals", {
+        limit_count: 5,
+      });
+
+      if (error) {
+        console.error("Error al obtener platillos", error);
+        return;
+      }
+
+      const favoritos = await fetchFavoritos(id); // Obtener los IDs de favoritos
+      setFavoritosIds(favoritos); // Guardar los IDs de favoritos
+
+      // Convertir los IDs de las recetas a números y asignar `isFavorito`
+      const mealsWithFavorito = meals.map((meal) => ({
+        ...meal,
+        isFavorito: favoritos.includes(Number(meal.id)), // Convertir `meal.id` a número
+      }));
+
+      console.log("Recetas con favoritos asignados:", mealsWithFavorito); // Verificar las recetas
+      setMealsRand(mealsWithFavorito);
+    } catch (error) {
+      console.error("Error al obtener recetas aleatorias:", error);
+    }
   };
 
   return (

@@ -6,6 +6,11 @@ import {
   ImageBackground,
   Pressable,
   Dimensions,
+  ImageBackground,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  Animated,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import Colors from "../../../assets/colors/Colors";
