@@ -13,32 +13,32 @@ export const UserProvider = ({ children }) => {
   // UserContext.jsx
   const fetchUserData = async () => {
     try {
-      // Obtener sesión actual
       const {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
-
       if (sessionError || !session) {
         setUser(null);
         return;
       }
 
-      // Obtener datos adicionales del usuario
-      const { data: userData, error: userError } = await supabase
+      // Obtener datos de la tabla 'usuarios'
+      const { data: dbUser, error: dbError } = await supabase
         .from("usuarios")
         .select("*")
-        .eq("id_user", session.user.id) // Usamos el ID de la sesión
+        .eq("id_user", session.user.id)
         .single();
 
-      if (userError) throw userError;
+      if (dbError) throw dbError;
 
-      // Combinar datos de auth y perfil
+      // Combinar datos de Auth y de la tabla
       setUser({
-        ...userData,
-        id: session.user.id, // Asegurar que tenemos el ID correcto
-        email: session.user.email,
-        email_verified: session.user.email_confirmed_at !== null,
+        ...session.user,
+        user_metadata: {
+          ...session.user.user_metadata,
+          ...dbUser, // Sobrescribe con datos actualizados
+        },
+        dbData: dbUser, // Mantenemos copia separada por si acaso
       });
     } catch (error) {
       console.error("Error fetching user data:", error);

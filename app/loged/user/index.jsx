@@ -6,17 +6,21 @@ import {
   Dimensions,
   TextInput,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../../context/UserContext";
 import { supabase } from "../../../lib/supabase";
 import Colors from "../../../assets/colors/Colors";
+import { useRouter } from "expo-router";
 
 const screenHeight = Dimensions.get("window").height;
 const screenWidth = Dimensions.get("window").width;
 
 const User = () => {
-  const { user, logOut } = useUser();
+  const { user, logOut, updateUser } = useUser();
+  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
@@ -25,25 +29,93 @@ const User = () => {
   const [edad, setEdad] = useState("");
   const [peso, setPeso] = useState("");
   const [estatura, setEstatura] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditable, setIsEditable] = useState(false);
+
+  const cambioEditable = () => {
+    setIsEditable(!isEditable);
+  };
 
   const guardarDatos = async () => {
-    const { data, error } = await supabase
-      .from("usuarios")
-      .update({
+    try {
+      // 1. Verificar sesión
+      setIsLoading(true);
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        throw new Error("No hay sesión activa");
+      }
+
+      // 2. Preparar datos para la tabla 'usuarios'
+      const userUpdates = {
         nombre: nombre,
         apellidos: apellidos,
         sexo: sexo,
-        edad: Number(edad), // Asegura que los valores numéricos sean números
-        peso: Number(peso),
-        estatura: Number(estatura),
-      })
-      .eq("id_user", user.sub)
-      .select();
+        edad: edad ? parseInt(edad) : null,
+        peso: peso ? parseFloat(peso) : null,
+        estatura: estatura ? parseFloat(estatura) : null,
+      };
 
-    if (error) {
-      console.error("Error al guardar los datos: ", error);
+      // 3. Actualizar tabla 'usuarios'
+      const { error: dbError } = await supabase
+        .from("usuarios")
+        .update(userUpdates)
+        .eq("id_user", session.user.id);
+
+      setIsLoading(false);
+      setIsEditable(false);
+      Alert.alert("Éxito", "Datos actualizados correctamente");
+      if (dbError) {
+        throw dbError;
+        console.log("Error al actualizar la tabla usuarios:", dbError);
+      }
+
+      // 4. Actualizar user_metadata en Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        data: userUpdates,
+      });
+
+      if (authError) {
+        throw authError;
+        console.log("Error al actualizar user_metadata:", authError);
+      }
+
+      // 5. Actualizar contexto local
+      await updateUser();
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      Alert.alert("Error", error.message || "Error al actualizar datos", [
+        {
+          text: "OK",
+          onPress: () => console.log("Usuario confirmó error"),
+        },
+      ]);
+    } finally {
+      setIsLoading(false); // Se ejecuta siempre, haya error o no
     }
-    console.log("Datos guardados: ", data);
+  };
+
+  const cerrarSesion = async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.replace("/");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      Alert.alert("Error", "No se pudo cerrar la sesión", [
+        {
+          text: "OK",
+          onPress: () => console.log("Usuario confirmó error de cierre"),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Cargar los datos del usuario cuando el componente se monta
@@ -64,6 +136,7 @@ const User = () => {
       <View style={styles.titleCont}>
         <Text style={styles.title}>User</Text>
       </View>
+
       <ScrollView>
         <View style={styles.scrollCont}>
           <View style={styles.userCont}>
@@ -72,6 +145,7 @@ const User = () => {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Nombre</Text>
@@ -79,6 +153,7 @@ const User = () => {
               style={styles.input}
               value={nombre}
               onChangeText={setNombre}
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Apellidos</Text>
@@ -86,6 +161,7 @@ const User = () => {
               style={styles.input}
               value={apellidos}
               onChangeText={setApellidos}
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Sexo</Text>
@@ -93,6 +169,7 @@ const User = () => {
               style={styles.input}
               value={sexo}
               onChangeText={setSexo}
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Edad</Text>
@@ -101,6 +178,7 @@ const User = () => {
               value={edad}
               onChangeText={setEdad}
               keyboardType="numeric"
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Peso</Text>
@@ -109,6 +187,7 @@ const User = () => {
               value={peso}
               onChangeText={setPeso}
               keyboardType="numeric"
+              editable={isEditable}
             />
 
             <Text style={styles.subtitle}>Estatura</Text>
@@ -117,15 +196,27 @@ const User = () => {
               value={estatura}
               onChangeText={setEstatura}
               keyboardType="numeric"
+              editable={isEditable}
             />
           </View>
+
           <View style={styles.btnCont}>
-            <Pressable onPress={() => guardarDatos()}>
+            <Pressable
+              onPress={isEditable ? guardarDatos : cambioEditable}
+              disabled={isLoading}
+            >
               <View style={styles.btn}>
-                <Text style={styles.txtBtn}>Guardar</Text>
+                <Text style={styles.txtBtn}>
+                  {isLoading
+                    ? "Guardando..."
+                    : isEditable
+                    ? "Guardar"
+                    : "Actualizar"}
+                </Text>
               </View>
             </Pressable>
-            <Pressable onPress={logOut}>
+
+            <Pressable onPress={cerrarSesion} disabled={isLoading}>
               <View style={styles.btn}>
                 <Text style={styles.txtBtn}>Cerrar sesión</Text>
               </View>
@@ -143,7 +234,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: screenHeight * 0.08,
-    //justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.beige,
   },
@@ -174,6 +264,12 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.beigeMasOscuro,
     fontSize: 20,
   },
+  btnCont: {
+    justifyContent: "center",
+    alignItems: "center",
+    margin: screenHeight * 0.03,
+    gap: screenHeight * 0.03,
+  },
   btn: {
     width: screenWidth * 0.6,
     height: screenHeight * 0.05,
@@ -186,5 +282,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: Colors.beige,
     textAlign: "center",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
 });
