@@ -36,8 +36,12 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
-    if (error) Alert.alert("Error al iniciar sesión", error);
+    if (error) {
+      Alert.alert("Error al iniciar sesión", error);
+      return;
+    }
     setUser(data.user.user_metadata);
+    console.log("Usuario logueado: ", data.user.user_metadata);
     router.push("/loged");
   };
 
