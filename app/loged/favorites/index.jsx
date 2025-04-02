@@ -24,6 +24,28 @@ const Favorites = () => {
   const [favoritos, setFavoritos] = useState([]);
   const router = useRouter();
 
+  // Función para registrar la vista de una receta
+  const registerRecipeViews = async (recipeId) => {
+    if (!user || !user.sub) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("platillos_vistas")
+        .insert([
+          {
+            id_platillo: parseInt(recipeId, 10),
+            id_user: user.sub,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+      console.log("Vista registrada:", data);
+    } catch (error) {
+      console.error("Error registrando vista de receta:", error);
+    }
+  };
+
   // Función para obtener los favoritos con detalles completos
   const fetchFavoritos = async () => {
     if (!user || !user.sub) {
@@ -32,7 +54,6 @@ const Favorites = () => {
     }
 
     try {
-      // Obtener los IDs de los favoritos
       const { data: favoritosData, error: favoritosError } = await supabase
         .from("favoritos")
         .select("id_platillo")
@@ -46,7 +67,6 @@ const Favorites = () => {
 
       const favoritosIds = favoritosData.map((fav) => fav.id_platillo);
 
-      // Llamar a la función almacenada para obtener los detalles completos de los platillos
       const { data: platillosData, error: platillosError } = await supabase.rpc(
         "obtener_platillos"
       );
@@ -60,20 +80,18 @@ const Favorites = () => {
         return;
       }
 
-      // Filtrar los platillos para incluir solo los favoritos
       const favoritosDetalles = platillosData.filter((platillo) =>
         favoritosIds.includes(platillo.id)
       );
 
       console.log("Detalles de los platillos favoritos:", favoritosDetalles);
-      setFavoritos(favoritosDetalles); // Actualizar el estado con los detalles completos
+      setFavoritos(favoritosDetalles);
     } catch (error) {
       console.error("Error al obtener favoritos:", error);
       setFavoritos([]);
     }
   };
 
-  // Actualizar la lista de favoritos cada vez que la ventana se enfoque
   useFocusEffect(
     React.useCallback(() => {
       fetchFavoritos();
@@ -95,6 +113,10 @@ const Favorites = () => {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => {
+                // Registrar la vista de la receta
+                registerRecipeViews(item.id);
+
+                // Navegar a la página de detalles de la receta
                 router.push({
                   pathname: "/loged/favorites/recipe",
                   params: {
