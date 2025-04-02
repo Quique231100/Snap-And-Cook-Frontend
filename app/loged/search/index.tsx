@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
@@ -179,30 +180,24 @@ const Search = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchDataWithFavoritos = async () => {
-      try {
-        const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
-        console.log("Favoritos cargados:", favoritos);
-        await fetchData(favoritos); // Pasar los favoritos a `fetchData`
-      } catch (error) {
-        console.error("Error al cargar los datos iniciales:", error);
-      }
-    };
-
-    if (user && user.sub) {
-      fetchDataWithFavoritos();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const testFetchFavoritos = async () => {
-      const favoritos = await fetchFavoritos();
+  const fetchDataWithFavoritos = async () => {
+    try {
+      const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
       console.log("Favoritos cargados:", favoritos);
-    };
+      await fetchData(favoritos); // Pasar los favoritos a `fetchData`
+    } catch (error) {
+      console.error("Error al cargar los datos iniciales:", error);
+    }
+  };
 
-    testFetchFavoritos();
-  }, []);
+  // Actualizar los datos cada vez que la ventana se enfoque
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user && user.sub) {
+        fetchDataWithFavoritos();
+      }
+    }, [user])
+  );
 
   return (
     <View style={styles.container}>
@@ -238,6 +233,7 @@ const Search = () => {
                 router.push({
                   pathname: "/loged/search/recipe",
                   params: {
+                    id: item.id,
                     nombre: item.nombre_platillo,
                     img: item.imagen_platillo,
                     ingredientes: item.ingredientes,

@@ -18,6 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons"; // Importación para el ícono del botón de favorito
+import { useFocusEffect } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("screen").width;
 const screenHeight = Dimensions.get("screen").height;
@@ -228,23 +229,26 @@ const Index = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
-        console.log("Favoritos cargados:", favoritos);
-        await getPopularMeals(favoritos); // Pasar los favoritos a `getPopularMeals`
-        getAdvice();
-        await getLastMeals(user.sub, favoritos); // Pasar los favoritos a `getLastMeals`
-      } catch (error) {
-        console.error("Error al cargar los datos iniciales:", error);
-      }
-    };
-
-    if (user && user.sub) {
-      fetchData();
+  const fetchData = async () => {
+    try {
+      const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
+      console.log("Favoritos cargados:", favoritos);
+      await getPopularMeals(favoritos); // Pasar los favoritos a `getPopularMeals`
+      getAdvice();
+      await getLastMeals(user.sub, favoritos); // Pasar los favoritos a `getLastMeals`
+    } catch (error) {
+      console.error("Error al cargar los datos iniciales:", error);
     }
-  }, [user]);
+  };
+
+  // Actualizar los datos cada vez que la ventana se enfoque
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user && user.sub) {
+        fetchData();
+      }
+    }, [user])
+  );
 
   return (
     <View style={styles.container}>
@@ -337,6 +341,7 @@ const Index = () => {
                     router.push({
                       pathname: "/loged/home/recipe",
                       params: {
+                        id: item.id,
                         nombre: item.nombre_platillo,
                         img: item.imagen_platillo,
                         ingredientes: item.ingredientes,
@@ -399,6 +404,7 @@ const Index = () => {
                     router.push({
                       pathname: "/loged/home/recipe",
                       params: {
+                        id: item.id,
                         nombre: item.nombre_platillo,
                         img: item.imagen_platillo,
                         ingredientes: item.ingredientes,
