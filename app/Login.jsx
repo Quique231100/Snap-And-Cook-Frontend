@@ -24,7 +24,7 @@ const Login = () => {
 
   //Funcion para inicio de sesion
   const handleLogin = async () => {
-    //Validación campos vacíos
+    // Validación de campos vacíos
     if (!email.trim() || !password.trim()) {
       Alert.alert("Error", "Debe llenar los campos para continuar");
       return;
@@ -36,10 +36,17 @@ const Login = () => {
       password: password,
     });
     setLoading(false);
+
     if (error) {
-      Alert.alert("Error al iniciar sesión", error);
+      // Personalizar el mensaje de error
+      if (error.message.includes("Invalid login credentials")) {
+        Alert.alert("Error", "Correo o contraseña incorrectos");
+      } else {
+        Alert.alert("Error al iniciar sesión", error.message);
+      }
       return;
     }
+
     console.log("Usuario logueado:", data.user.user_metadata);
 
     // Refrescar el token del usuario para obtener los datos actualizados
