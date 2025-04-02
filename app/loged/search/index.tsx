@@ -36,14 +36,24 @@ const Search = () => {
 
   //Hook para renderizar los datos cuando se accede a esta ventana
 
-  const fetchData = async () => {
+  const fetchData = async (favoritosIds) => {
     const { data, error } = await supabase.rpc("obtener_platillos");
 
     if (error) {
-      console.log(error);
-    } else {
-      setMeals(data);
+      console.error("Error al obtener platillos:", error);
+      setMeals([]);
+      return;
     }
+
+    // Agregar la propiedad `isFavorito` a cada platillo
+    const updatedMeals = data.map((meal) => ({
+      ...meal,
+      isFavorito: favoritosIds.includes(meal.id), // Comparar con los IDs de favoritos
+    }));
+
+    console.log("Platillos con estado de favorito:", updatedMeals);
+
+    setMeals(updatedMeals); // Actualizar el estado con los platillos y su estado de favorito
   };
 
   const registerRecipeViews = async (recipeId) => {
@@ -69,8 +79,129 @@ const Search = () => {
     }
   };
 
+  const fetchFavoritos = async () => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("favoritos")
+        .select("id_platillo")
+        .eq("id_user", user.sub); // Filtrar por el usuario actual
+
+      if (error) {
+        console.error("Error al obtener favoritos:", error);
+        return [];
+      }
+
+      console.log("Favoritos obtenidos desde la base de datos:", data);
+      const favoritos = data.map((fav) => fav.id_platillo); // Extraer solo los IDs de los platillos
+      return favoritos; // Devolver los favoritos
+    } catch (error) {
+      console.error("Error al obtener favoritos:", error);
+      return [];
+    }
+  };
+
+  const toggleFavorito = async (id_platillo: number) => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return;
+    }
+
+    console.log("ID del platillo recibido:", id_platillo);
+
+    if (!id_platillo) {
+      console.error("El ID del platillo es inválido.");
+      Alert.alert("Error", "El ID del platillo no es válido.");
+      return;
+    }
+
+    const isFavorito = meals.find(
+      (meal) => meal.id === id_platillo
+    )?.isFavorito;
+
+    if (isFavorito) {
+      // Eliminar de favoritos
+      try {
+        const { error } = await supabase
+          .from("favoritos")
+          .delete()
+          .eq("id_platillo", id_platillo)
+          .eq("id_user", user.sub);
+
+        if (error) {
+          console.error("Error al eliminar de favoritos:", error);
+          Alert.alert("Error", "No se pudo eliminar el platillo de favoritos.");
+          return;
+        }
+
+        // Actualizar el estado
+        setMeals((prevMeals) =>
+          prevMeals.map((meal) =>
+            meal.id === id_platillo
+              ? { ...meal, isFavorito: false } // Actualizar `isFavorito` a false
+              : meal
+          )
+        );
+        console.log(`Platillo ${id_platillo} eliminado de favoritos.`);
+      } catch (error) {
+        console.error("Error al eliminar de favoritos:", error);
+      }
+    } else {
+      // Agregar a favoritos
+      try {
+        const { error } = await supabase.from("favoritos").insert({
+          id_platillo,
+          id_user: user.sub,
+        });
+
+        if (error) {
+          console.error("Error al agregar a favoritos:", error);
+          Alert.alert("Error", "No se pudo agregar el platillo a favoritos.");
+          return;
+        }
+
+        // Actualizar el estado
+        setMeals((prevMeals) =>
+          prevMeals.map((meal) =>
+            meal.id === id_platillo
+              ? { ...meal, isFavorito: true } // Actualizar `isFavorito` a true
+              : meal
+          )
+        );
+        console.log(`Platillo ${id_platillo} agregado a favoritos.`);
+      } catch (error) {
+        console.error("Error al agregar a favoritos:", error);
+      }
+    }
+  };
+
   useEffect(() => {
-    fetchData();
+    const fetchDataWithFavoritos = async () => {
+      try {
+        const favoritos = await fetchFavoritos(); // Obtener los favoritos primero
+        console.log("Favoritos cargados:", favoritos);
+        await fetchData(favoritos); // Pasar los favoritos a `fetchData`
+      } catch (error) {
+        console.error("Error al cargar los datos iniciales:", error);
+      }
+    };
+
+    if (user && user.sub) {
+      fetchDataWithFavoritos();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const testFetchFavoritos = async () => {
+      const favoritos = await fetchFavoritos();
+      console.log("Favoritos cargados:", favoritos);
+    };
+
+    testFetchFavoritos();
   }, []);
 
   return (
@@ -121,12 +252,22 @@ const Search = () => {
                   style={styles.imgItemCont}
                 >
                   <LinearGradient
-                    // Background Linear Gradient
                     colors={["rgba(0,0,0,0.8)", "transparent"]}
                     style={styles.background}
                     start={{ x: 0.5, y: 1.1 }}
                     end={{ x: 0.5, y: 0 }}
                   />
+                  {/* Botón de favorito */}
+                  <Pressable
+                    style={styles.favButton}
+                    onPress={() => toggleFavorito(item.id)} // Llamar a la función `toggleFavorito`
+                  >
+                    <Ionicons
+                      name="heart"
+                      size={24}
+                      color={item.isFavorito ? Colors.rojo : Colors.beige} // Cambiar el color según el estado de favorito
+                    />
+                  </Pressable>
                   <View style={styles.txtItemCont}>
                     <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
                   </View>
@@ -219,5 +360,14 @@ const styles = StyleSheet.create({
     color: Colors.beige,
     fontSize: 30,
     fontWeight: "bold",
+  },
+  favButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.verdeGasolina, // Color de fondo del botón
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
 });

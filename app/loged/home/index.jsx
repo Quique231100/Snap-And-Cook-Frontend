@@ -76,13 +76,10 @@ const Index = () => {
       ...meal,
       isFavorito: favoritosIds.includes(meal.id), // Comparar con los IDs de favoritos
     }));
-
-    console.log("Platillos populares con estado de favorito:", updatedMeals);
-
     setMealsRand(updatedMeals); // Actualizar el estado con los platillos y su estado de favorito
   };
 
-  const getLastMeals = async (usuarioId) => {
+  const getLastMeals = async (usuarioId, favoritosIds) => {
     const { data, error } = await supabase.rpc("get_ultimos_vistos", {
       user_uuid: usuarioId,
     });
@@ -90,8 +87,21 @@ const Index = () => {
     if (error) {
       console.error("Error al obtener historial:", error);
       setLastMeals([]);
+      return;
     }
-    setLastMeals(data);
+
+    // Agregar la propiedad `isFavorito` a cada platillo
+    const updatedLastMeals = data.map((meal) => ({
+      ...meal,
+      isFavorito: favoritosIds.includes(meal.id), // Comparar con los IDs de favoritos
+    }));
+
+    console.log(
+      "Últimas recetas vistas con estado de favorito:",
+      updatedLastMeals
+    );
+
+    setLastMeals(updatedLastMeals); // Actualizar el estado con los platillos y su estado de favorito
   };
 
   const registerRecipeViews = async (recipeId) => {
@@ -109,7 +119,6 @@ const Index = () => {
         .select(); // Esto devuelve el registro insertado
 
       if (error) throw error;
-      console.log("Vista registrada correctamente :", data); // Debería mostrar el registro
       return data;
     } catch (error) {
       console.error("Error registrando vista de receta:", error);
@@ -151,7 +160,7 @@ const Index = () => {
       return;
     }
 
-    console.log("ID del platillo recibido:", id_platillo); // Depuración
+    console.log("ID del platillo recibido:", id_platillo);
 
     if (!id_platillo) {
       console.error("El ID del platillo es inválido.");
@@ -217,7 +226,6 @@ const Index = () => {
         console.error("Error al agregar a favoritos:", error);
       }
     }
-    console.log("Estado actualizado de mealsRand:", mealsRand);
   };
 
   useEffect(() => {
@@ -227,7 +235,7 @@ const Index = () => {
         console.log("Favoritos cargados:", favoritos);
         await getPopularMeals(favoritos); // Pasar los favoritos a `getPopularMeals`
         getAdvice();
-        getLastMeals(user.sub);
+        await getLastMeals(user.sub, favoritos); // Pasar los favoritos a `getLastMeals`
       } catch (error) {
         console.error("Error al cargar los datos iniciales:", error);
       }
@@ -237,8 +245,6 @@ const Index = () => {
       fetchData();
     }
   }, [user]);
-
-  console.log("Estado inicial de mealsRand:", mealsRand);
 
   return (
     <View style={styles.container}>
@@ -354,7 +360,6 @@ const Index = () => {
                       <Pressable
                         style={styles.favButton}
                         onPress={() => {
-                          console.log("Objeto item:", item); // Depuración
                           toggleFavorito(item.id); // Asegúrate de que `id_platillo` sea la propiedad correcta
                         }}
                       >
@@ -413,6 +418,19 @@ const Index = () => {
                         start={{ x: 0.5, y: 1.1 }}
                         end={{ x: 0.5, y: 0 }}
                       />
+                      {/* Botón de favorito */}
+                      <Pressable
+                        style={styles.favButton}
+                        onPress={() => {
+                          toggleFavorito(item.id); // Asegúrate de que `id` sea la propiedad correcta
+                        }}
+                      >
+                        <Ionicons
+                          name="heart"
+                          size={24}
+                          color={item.isFavorito ? Colors.rojo : Colors.beige} // Cambiar el color según el estado de favorito
+                        />
+                      </Pressable>
                       <View style={styles.txtItemCont}>
                         <Text style={styles.txtItem}>
                           {item.nombre_platillo}
