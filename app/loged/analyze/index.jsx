@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import Colors from "../../../assets/colors/Colors";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
@@ -114,7 +115,6 @@ export default function indexAnalyze() {
       } else {
         setIngredients(detectedFood);
         fetchRecipes(detectedFood);
-        Alert.alert("Éxito", "Alimentos detectados. Revisa la lista.");
       }
     } catch (error) {
       console.error(
@@ -134,16 +134,41 @@ export default function indexAnalyze() {
 
   const fetchRecipes = async (detectedIngredients) => {
     try {
-      const { data, error } = await supabase.rpc(
+      // Obtener los IDs de los favoritos del usuario
+      const { data: favoritosData, error: favoritosError } = await supabase
+        .from("favoritos")
+        .select("id_platillo")
+        .eq("id_user", user.sub);
+
+      if (favoritosError) {
+        console.error("Error al obtener favoritos:", favoritosError);
+        return;
+      }
+
+      const favoritosIds = favoritosData.map((fav) => fav.id_platillo);
+
+      // Obtener las recetas basadas en los ingredientes detectados
+      const { data: recetasData, error: recetasError } = await supabase.rpc(
         "obtener_platillos_por_ingredientes",
         {
           ingredientes_input: detectedIngredients,
         }
       );
 
-      if (error) throw error;
-      console.log("Recetas obtenidas:", data);
-      setRecipes(data);
+      if (recetasError) {
+        console.error("Error al obtener recetas:", recetasError);
+        setRecipes([]);
+        return;
+      }
+
+      // Combinar las recetas con el estado de favoritos
+      const updatedRecipes = recetasData.map((recipe) => ({
+        ...recipe,
+        isFavorito: favoritosIds.includes(recipe.id), // Marcar como favorito si está en la lista de favoritos
+      }));
+
+      console.log("Recetas actualizadas con favoritos:", updatedRecipes);
+      setRecipes(updatedRecipes);
     } catch (err) {
       console.error("Error al obtener recetas:", err);
       setRecipes([]);
@@ -170,6 +195,74 @@ export default function indexAnalyze() {
     } catch (error) {
       console.error("Error registrando vista de receta en catch:", error);
       return null;
+    }
+  };
+
+  const toggleFavorito = async (id_platillo) => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return;
+    }
+
+    console.log("ID del platillo recibido:", id_platillo);
+
+    if (!id_platillo) {
+      console.error("El ID del platillo es inválido.");
+      Alert.alert("Error", "El ID del platillo no es válido.");
+      return;
+    }
+
+    const isFavorito = recipes.find(
+      (recipe) => recipe.id === id_platillo
+    )?.isFavorito;
+
+    if (isFavorito) {
+      try {
+        const { error } = await supabase
+          .from("favoritos")
+          .delete()
+          .eq("id_platillo", id_platillo)
+          .eq("id_user", user.sub);
+
+        if (error) {
+          console.error("Error al eliminar de favoritos:", error);
+          Alert.alert("Error", "No se pudo eliminar el platillo de favoritos.");
+          return;
+        }
+
+        setRecipes((prevRecipes) =>
+          prevRecipes.map((recipe) =>
+            recipe.id === id_platillo
+              ? { ...recipe, isFavorito: false }
+              : recipe
+          )
+        );
+        console.log(`Platillo ${id_platillo} eliminado de favoritos.`);
+      } catch (error) {
+        console.error("Error al eliminar de favoritos:", error);
+      }
+    } else {
+      try {
+        const { error } = await supabase.from("favoritos").insert({
+          id_platillo,
+          id_user: user.sub,
+        });
+
+        if (error) {
+          console.error("Error al agregar a favoritos:", error);
+          Alert.alert("Error", "No se pudo agregar el platillo a favoritos.");
+          return;
+        }
+
+        setRecipes((prevRecipes) =>
+          prevRecipes.map((recipe) =>
+            recipe.id === id_platillo ? { ...recipe, isFavorito: true } : recipe
+          )
+        );
+        console.log(`Platillo ${id_platillo} agregado a favoritos.`);
+      } catch (error) {
+        console.error("Error al agregar a favoritos:", error);
+      }
     }
   };
 
@@ -237,6 +330,7 @@ export default function indexAnalyze() {
                       router.push({
                         pathname: "/loged/analyze/recipe",
                         params: {
+                          id: item.id,
                           nombre: item.nombre_platillo,
                           img: item.imagen_platillo,
                           ingredientes: item.ingredientes,
@@ -257,6 +351,17 @@ export default function indexAnalyze() {
                           start={{ x: 0.5, y: 1.1 }}
                           end={{ x: 0.5, y: 0 }}
                         />
+                        {/* Botón de favorito */}
+                        <Pressable
+                          style={styles.favButton}
+                          onPress={() => toggleFavorito(item.id)}
+                        >
+                          <Ionicons
+                            name="heart"
+                            size={24}
+                            color={item.isFavorito ? Colors.rojo : Colors.beige}
+                          />
+                        </Pressable>
                         <View style={styles.txtItemCont}>
                           <Text style={styles.txtItem}>
                             {item.nombre_platillo}
@@ -443,5 +548,14 @@ const styles = StyleSheet.create({
     color: Colors.beige,
     fontSize: 30,
     fontWeight: "bold",
+  },
+  favButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.verdeGasolina,
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
 });

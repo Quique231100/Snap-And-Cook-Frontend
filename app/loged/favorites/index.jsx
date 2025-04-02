@@ -1,142 +1,143 @@
 import {
-  ScrollView,
   StyleSheet,
   Text,
   View,
   FlatList,
+  ImageBackground,
+  Pressable,
   Dimensions,
 } from "react-native";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Colors from "../../../assets/colors/Colors";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
+import { useFocusEffect } from "@react-navigation/native";
 
-const screenHeight = Dimensions.get("screen").height;
 const screenWidth = Dimensions.get("screen").width;
-
-const datos = {
-  random: [
-    {
-      id: 1,
-      nombre: "Hola",
-    },
-    {
-      id: 2,
-      nombre: "Hola",
-    },
-    {
-      id: 3,
-      nombre: "Hola",
-    },
-  ],
-};
+const screenHeight = Dimensions.get("screen").height;
 
 const Favorites = () => {
+  const { user } = useUser();
+  const [favoritos, setFavoritos] = useState([]);
+  const router = useRouter();
+
+  // Función para obtener los favoritos con detalles completos
+  const fetchFavoritos = async () => {
+    if (!user || !user.sub) {
+      console.error("El usuario no está autenticado.");
+      return;
+    }
+
+    try {
+      // Obtener los IDs de los favoritos
+      const { data: favoritosData, error: favoritosError } = await supabase
+        .from("favoritos")
+        .select("id_platillo")
+        .eq("id_user", user.sub);
+
+      if (favoritosError) {
+        console.error("Error al obtener favoritos:", favoritosError);
+        setFavoritos([]);
+        return;
+      }
+
+      const favoritosIds = favoritosData.map((fav) => fav.id_platillo);
+
+      // Llamar a la función almacenada para obtener los detalles completos de los platillos
+      const { data: platillosData, error: platillosError } = await supabase.rpc(
+        "obtener_platillos"
+      );
+
+      if (platillosError) {
+        console.error(
+          "Error al obtener detalles de los platillos favoritos:",
+          platillosError
+        );
+        setFavoritos([]);
+        return;
+      }
+
+      // Filtrar los platillos para incluir solo los favoritos
+      const favoritosDetalles = platillosData.filter((platillo) =>
+        favoritosIds.includes(platillo.id)
+      );
+
+      console.log("Detalles de los platillos favoritos:", favoritosDetalles);
+      setFavoritos(favoritosDetalles); // Actualizar el estado con los detalles completos
+    } catch (error) {
+      console.error("Error al obtener favoritos:", error);
+      setFavoritos([]);
+    }
+  };
+
+  // Actualizar la lista de favoritos cada vez que la ventana se enfoque
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFavoritos();
+    }, [user])
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favorites</Text>
-      <ScrollView>
-        <Text>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-          arcu nisl, posuere at aliquet eu, mollis ut enim. Sed sed arcu in
-          dolor fermentum convallis eget ut massa. Phasellus eget ultricies
-          nunc. Suspendisse sed gravida eros. Etiam vitae neque tristique,
-          fermentum odio eu, elementum enim. Vestibulum ante ipsum primis in
-          faucibus orci luctus et ultrices posuere cubilia curae; Maecenas
-          suscipit mauris eget posuere auctor. In vitae blandit mi. Quisque
-          imperdiet fermentum quam, in tristique arcu. Curabitur et lectus
-          turpis. Proin sem justo, tempus nec turpis ac, egestas consequat ex.
-          Vivamus urna purus, hendrerit ac finibus nec, commodo et mauris.
-          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
-          posuere cubilia curae; Integer et orci nunc. In quam lacus, dignissim
-          ac eleifend non, aliquet quis orci. Integer non ornare ante, fermentum
-          luctus augue. Nunc vel purus eget nibh lobortis hendrerit. Aliquam sit
-          amet arcu eget ante cursus egestas. Morbi ac augue vel justo mollis
-          imperdiet. Donec laoreet tellus eros, sit amet vestibulum nunc
-          interdum vel. Pellentesque habitant morbi tristique senectus et netus
-          et malesuada fames ac turpis egestas. Nunc arcu est, gravida vel velit
-          eget, consequat varius dolor. Morbi vehicula massa nec ex vulputate
-          rutrum. Morbi sit amet aliquam ligula, a convallis quam. Suspendisse
-          pulvinar molestie posuere. Nullam in porttitor nisl. Morbi metus
-          felis, pretium ornare magna ac, lobortis sagittis mauris. Donec ante
-          felis, volutpat eu fermentum vel, sodales eu nunc. Donec tellus nunc,
-          luctus dignissim nulla non, ultrices suscipit urna. Sed efficitur odio
-          vel ornare posuere. Sed viverra cursus nulla eu pharetra. Maecenas
-          facilisis metus nibh, fringilla vehicula risus cursus ac.
-        </Text>
-        <Text>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-          arcu nisl, posuere at aliquet eu, mollis ut enim. Sed sed arcu in
-          dolor fermentum convallis eget ut massa. Phasellus eget ultricies
-          nunc. Suspendisse sed gravida eros. Etiam vitae neque tristique,
-          fermentum odio eu, elementum enim. Vestibulum ante ipsum primis in
-          faucibus orci luctus et ultrices posuere cubilia curae; Maecenas
-          suscipit mauris eget posuere auctor. In vitae blandit mi. Quisque
-          imperdiet fermentum quam, in tristique arcu. Curabitur et lectus
-          turpis. Proin sem justo, tempus nec turpis ac, egestas consequat ex.
-          Vivamus urna purus, hendrerit ac finibus nec, commodo et mauris.
-          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
-          posuere cubilia curae; Integer et orci nunc. In quam lacus, dignissim
-          ac eleifend non, aliquet quis orci. Integer non ornare ante, fermentum
-          luctus augue. Nunc vel purus eget nibh lobortis hendrerit. Aliquam sit
-          amet arcu eget ante cursus egestas. Morbi ac augue vel justo mollis
-          imperdiet. Donec laoreet tellus eros, sit amet vestibulum nunc
-          interdum vel. Pellentesque habitant morbi tristique senectus et netus
-          et malesuada fames ac turpis egestas. Nunc arcu est, gravida vel velit
-          eget, consequat varius dolor. Morbi vehicula massa nec ex vulputate
-          rutrum. Morbi sit amet aliquam ligula, a convallis quam. Suspendisse
-          pulvinar molestie posuere. Nullam in porttitor nisl. Morbi metus
-          felis, pretium ornare magna ac, lobortis sagittis mauris. Donec ante
-          felis, volutpat eu fermentum vel, sodales eu nunc. Donec tellus nunc,
-          luctus dignissim nulla non, ultrices suscipit urna. Sed efficitur odio
-          vel ornare posuere. Sed viverra cursus nulla eu pharetra. Maecenas
-          facilisis metus nibh, fringilla vehicula risus cursus ac.
-        </Text>
-        <Text>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque
-          arcu nisl, posuere at aliquet eu, mollis ut enim. Sed sed arcu in
-          dolor fermentum convallis eget ut massa. Phasellus eget ultricies
-          nunc. Suspendisse sed gravida eros. Etiam vitae neque tristique,
-          fermentum odio eu, elementum enim. Vestibulum ante ipsum primis in
-          faucibus orci luctus et ultrices posuere cubilia curae; Maecenas
-          suscipit mauris eget posuere auctor. In vitae blandit mi. Quisque
-          imperdiet fermentum quam, in tristique arcu. Curabitur et lectus
-          turpis. Proin sem justo, tempus nec turpis ac, egestas consequat ex.
-          Vivamus urna purus, hendrerit ac finibus nec, commodo et mauris.
-          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
-          posuere cubilia curae; Integer et orci nunc. In quam lacus, dignissim
-          ac eleifend non, aliquet quis orci. Integer non ornare ante, fermentum
-          luctus augue. Nunc vel purus eget nibh lobortis hendrerit. Aliquam sit
-          amet arcu eget ante cursus egestas. Morbi ac augue vel justo mollis
-          imperdiet. Donec laoreet tellus eros, sit amet vestibulum nunc
-          interdum vel. Pellentesque habitant morbi tristique senectus et netus
-          et malesuada fames ac turpis egestas. Nunc arcu est, gravida vel velit
-          eget, consequat varius dolor. Morbi vehicula massa nec ex vulputate
-          rutrum. Morbi sit amet aliquam ligula, a convallis quam. Suspendisse
-          pulvinar molestie posuere. Nullam in porttitor nisl. Morbi metus
-          felis, pretium ornare magna ac, lobortis sagittis mauris. Donec ante
-          felis, volutpat eu fermentum vel, sodales eu nunc. Donec tellus nunc,
-          luctus dignissim nulla non, ultrices suscipit urna. Sed efficitur odio
-          vel ornare posuere. Sed viverra cursus nulla eu pharetra. Maecenas
-          facilisis metus nibh, fringilla vehicula risus cursus ac.
-        </Text>
+      <View style={styles.headerCont}>
+        <View style={styles.titleCont}>
+          <Text style={styles.txtTitle}>Favorites</Text>
+        </View>
+      </View>
+
+      <View style={styles.listCont}>
         <FlatList
-          data={datos.random}
-          keyExtractor={(item, id) => id.toString()}
+          data={favoritos}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View
-              style={{
-                height: screenHeight * 0.1,
-                width: screenWidth * 0.4,
-                backgroundColor: "red",
+            <Pressable
+              onPress={() => {
+                router.push({
+                  pathname: "/loged/favorites/recipe",
+                  params: {
+                    id: item.id,
+                    nombre: item.nombre_platillo,
+                    img: item.imagen_platillo,
+                    ingredientes: item.ingredientes,
+                    instrucciones: item.instrucciones_platillo,
+                  },
+                });
               }}
             >
-              <Text>{item.id}</Text>
-              <Text>{item.nombre}</Text>
-            </View>
+              <View style={styles.itemCont}>
+                <ImageBackground
+                  source={{ uri: item.imagen_platillo }}
+                  style={styles.imgItemCont}
+                >
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0.8)", "transparent"]}
+                    style={styles.background}
+                    start={{ x: 0.5, y: 1.1 }}
+                    end={{ x: 0.5, y: 0 }}
+                  />
+                  {/* Botón de favorito */}
+                  <Pressable
+                    style={styles.favButton}
+                    onPress={() => console.log("Eliminar de favoritos")}
+                  >
+                    <Ionicons name="heart" size={24} color={Colors.rojo} />
+                  </Pressable>
+                  <View style={styles.txtItemCont}>
+                    <Text style={styles.txtItem}>{item.nombre_platillo}</Text>
+                  </View>
+                </ImageBackground>
+              </View>
+            </Pressable>
           )}
-          scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={{ margin: 10 }} />}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => (
+            <View style={{ marginVertical: screenHeight * 0.015 }} />
+          )}
         />
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -147,11 +148,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.beige,
-    // justifyContent: "center",
-    // alignItems: "center",
-    paddingTop: 60,
+    alignItems: "center",
   },
-  title: {
-    fontSize: 36,
+  headerCont: {
+    width: screenWidth,
+    marginTop: screenHeight * 0.06,
+    alignItems: "center",
+    gap: screenHeight * 0.02,
+    marginBottom: screenHeight * 0.02,
+  },
+  titleCont: {
+    width: screenWidth * 0.9,
+  },
+  txtTitle: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: Colors.grisOscuro,
+  },
+  listCont: {
+    width: screenWidth * 0.9,
+    marginBottom: screenHeight * 0.23,
+  },
+  itemCont: {
+    backgroundColor: Colors.verdeGasolina,
+    height: screenHeight * 0.2,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  imgItemCont: {
+    resizeMode: "cover",
+    width: "100%",
+    height: "100%",
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: screenHeight * 0.2,
+  },
+  txtItemCont: {
+    height: "100%",
+    justifyContent: "flex-end",
+    marginLeft: "2%",
+    paddingBottom: "2%",
+  },
+  txtItem: {
+    color: Colors.beige,
+    fontSize: 30,
+    fontWeight: "bold",
+  },
+  favButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.verdeGasolina,
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
 });
