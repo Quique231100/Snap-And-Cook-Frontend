@@ -6,8 +6,8 @@ export default function RootLayout() {
     <UserProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ title: "Index" }} />
-        <Stack.Screen name="login" options={{ title: "Login" }} />
-        <Stack.Screen name="register" options={{ title: "Register" }} />
+        <Stack.Screen name="Login" options={{ title: "Login" }} />
+        <Stack.Screen name="Register" options={{ title: "Register" }} />
         <Stack.Screen name="loged" /> {/* Pantalla principal */}
       </Stack>
     </UserProvider>

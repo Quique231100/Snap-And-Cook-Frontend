@@ -54,7 +54,7 @@ export default function Index() {
       </View>
 
       <View style={styles.btnContainer}>
-        <Link href="/login" asChild>
+        <Link href="/Login" asChild>
           <Pressable>
             <View style={styles.loginBtn}>
               <Text style={styles.txtLoginBtn}>Iniciar sesión</Text>
@@ -62,7 +62,7 @@ export default function Index() {
           </Pressable>
         </Link>
 
-        <Link href="/register" asChild>
+        <Link href="/Register" asChild>
           <Pressable>
             <View style={styles.registerBtn}>
               <Text style={styles.txtRegisterBtn}>Crear una cuenta</Text>
