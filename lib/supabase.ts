@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/config.js";
 import { AppState } from "react-native";
 import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
