@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import Colors from "../assets/colors/Colors.js";
 import axios from "axios";
-import { useUser } from "../context/UserContext"; // Importar el contexto
+import { useUser } from "../context/UserContext.tsx"; // Importar el contexto
 import { supabase } from "../lib/supabase.ts";
 
 const Login = () => {
@@ -48,7 +48,7 @@ const Login = () => {
     if (refreshError) {
       Alert.alert(
         "Error al refrescar el token del usuario",
-        refreshError.message
+        refreshError.message,
       );
       return;
     }

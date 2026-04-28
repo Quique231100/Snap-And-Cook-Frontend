@@ -6,8 +6,6 @@ import {
   ImageBackground,
   Pressable,
   Dimensions,
-  ImageBackground,
-  Pressable,
   Alert,
   ActivityIndicator,
   Animated,
@@ -52,14 +50,13 @@ const Favorites = () => {
       const favoritosIds = favoritosData.map((fav) => fav.id_platillo);
 
       // Llamar a la función almacenada para obtener los detalles completos de los platillos
-      const { data: platillosData, error: platillosError } = await supabase.rpc(
-        "obtener_platillos"
-      );
+      const { data: platillosData, error: platillosError } =
+        await supabase.rpc("obtener_platillos");
 
       if (platillosError) {
         console.error(
           "Error al obtener detalles de los platillos favoritos:",
-          platillosError
+          platillosError,
         );
         setFavoritos([]);
         return;
@@ -67,7 +64,7 @@ const Favorites = () => {
 
       // Filtrar los platillos para incluir solo los favoritos
       const favoritosDetalles = platillosData.filter((platillo) =>
-        favoritosIds.includes(platillo.id)
+        favoritosIds.includes(platillo.id),
       );
 
       console.log("Detalles de los platillos favoritos:", favoritosDetalles);
@@ -82,7 +79,7 @@ const Favorites = () => {
   useFocusEffect(
     React.useCallback(() => {
       fetchFavoritos();
-    }, [user])
+    }, [user]),
   );
 
   return (
